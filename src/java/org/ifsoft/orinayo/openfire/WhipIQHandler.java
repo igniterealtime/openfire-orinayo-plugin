@@ -84,6 +84,10 @@ public class WhipIQHandler extends IQHandler implements ServerFeaturesProvider
 					final Element sdp = whip.element("sdp");
 					final String offer = sdp.getText();
 					
+					final Element json = whip.element("json");
+					final JSONObject metaData = new JSONObject(json.getText());	
+					BroadcastBox.self.metaData.put(id, metaData);					
+					
 					final String ipaddr = JiveGlobals.getProperty("orinayo.ipaddr", BroadcastBox.getIpAddress());
 					final String tcpPort = JiveGlobals.getProperty("orinayo.port", BroadcastBox.getPort());				
 					final String webUrl = "http://" + ipaddr + ":" + tcpPort + "/api/whip";

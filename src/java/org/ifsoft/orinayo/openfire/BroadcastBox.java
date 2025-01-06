@@ -94,6 +94,8 @@ public class BroadcastBox implements Plugin, PropertyEventListener, ProcessListe
 	private JmDNS jmdns;
 	
     public static BroadcastBox self;	
+	public ConcurrentHashMap<String, JSONObject> metaData = new ConcurrentHashMap<>();	
+	
 
     public void destroyPlugin()     {
         PropertyEventDispatcher.removeListener(this);

@@ -90,6 +90,12 @@ public class WhepIQHandler extends IQHandler implements ServerFeaturesProvider
 					final String answer = fetch("http://" + ipaddr + ":" + tcpPort + "/api/whep", id, offer, "POST");
 					final Element childElement = reply.setChildElement(ELEMENT_NAME, NAMESPACE1);					
 					childElement.addElement("sdp").setText(answer);
+					
+					final JSONObject metaData = BroadcastBox.self.metaData.get(id);
+					
+					if (metaData != null) {
+						childElement.addElement("json", "urn:xmpp:json:0").setText(metaData.toString());
+					}					
 				}
 				else
 					
@@ -110,7 +116,8 @@ public class WhepIQHandler extends IQHandler implements ServerFeaturesProvider
 					for (int i=0; i<streams.length(); i++)	{
 						JSONObject stream = streams.getJSONObject(i);
 						Element item = childElement.addElement("item");
-						item.addAttribute("id", stream.getString("streamKey"));
+						String id = stream.getString("streamKey");
+						item.addAttribute("id", id);						
 					}
 				}								
 			}
