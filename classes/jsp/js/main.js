@@ -25,6 +25,22 @@ const WHAMMY = 2;
 const LOGO = 12;
 const CONTROL = 100;
 
+var midiInstrCheckedEle = [];
+var midiVolumeEle = [];
+var programChangeEle = null;
+var drumCheckedEle = null;
+var bassCheckedEle = null;
+var chordCheckedEle = null;
+var autoFillCheckedEle = null;
+var introEndCheckedEle = null;
+var effectsPreset = null;
+var guitarPosition = null;
+let tempoDiv = null;
+let volDiv = null;
+
+var vocalistMode = false;
+var muteChords = null;
+var loopWait = 0;
 var activeStreams = null;
 var _converse = null;
 var recorderDestination = null;
@@ -50,7 +66,9 @@ var keysSound2Vol = 50;
 var chordproParser = new ChordSheetJS.ChordProParser();
 var lyricsX = 2;
 var lyricsY = 18;
+var displayShape = null;
 var lyricsCanvas = null;
+var lyricsContext = null;
 var recorderFilename = null;
 var mediaRecorder = null;
 var recordMode = false;
@@ -270,6 +288,7 @@ var idbKeyval = (function (exports) {
 
 }({}));
 
+window.loopCache = {};
 window.requestAnimFrame = window.requestAnimationFrame;
 window.addEventListener("load", onloadHandler);
 window.addEventListener("beforeunload", () => {if (!registration) saveConfig(); });
@@ -570,9 +589,7 @@ async function doLavaGenieSetup(device) {
 					handlers[characteristic.uuid] = await characteristic.startNotifications();
 					
 					let cannotFire = true;
-					let haveFired = false;
-					let tempoDiv = document.getElementById('showTempo');
-					let volDiv = document.getElementById('showVol');					
+					let haveFired = false;					
 					
 					if (!game) {
 						setup();
@@ -614,14 +631,14 @@ async function doLavaGenieSetup(device) {
 
 						if (eventData[0] == 202 && eventData[1] == 2 && eventData[2] == 92) { // chord key press	
 						
-							if (eventData[3] == 27 && eventData[4] == 71) {
+							if (eventData[3] == 25 && eventData[4] == 69) {
 								pad.buttons[YELLOW] = true;		// 7b			
 								pad.buttons[RED] = true;								
 								chordSelected = true;
 							}
 							else
 								
-							if (eventData[3] == 26 && eventData[4] == 70) {
+							if (eventData[3] == 20 && eventData[4] == 72) {
 								pad.buttons[YELLOW] = true;		// 5b			
 								pad.buttons[GREEN] = true;								
 								pad.buttons[RED] = true;							
@@ -641,8 +658,16 @@ async function doLavaGenieSetup(device) {
 								chordSelected = true;
 							}
 							else
+
+							if (eventData[3] == 57 && eventData[4] == 101) {
+								pad.buttons[RED] = true;		// 6
+								pad.buttons[YELLOW] = true;
+								pad.buttons[BLUE] = true;							
+								chordSelected = true;
+							}
+							else
 								
-							if (eventData[3] == 53 && eventData[4] == 105) {
+							if (eventData[3] == 49 && eventData[4] == 109) {
 								pad.buttons[RED] = true;		// 6
 								pad.buttons[YELLOW] = true;
 								pad.buttons[BLUE] = true;							
@@ -663,7 +688,7 @@ async function doLavaGenieSetup(device) {
 							}
 							else
 								
-							if (eventData[3] == 85 && eventData[4] == 9) {
+							if (eventData[3] == 89 && eventData[4] == 5) {
 								pad.buttons[GREEN] = true;		// 5/7
 								pad.buttons[RED] = true;							
 								chordSelected = true;
@@ -676,14 +701,14 @@ async function doLavaGenieSetup(device) {
 							}
 							else
 								
-							if (eventData[3] == 107 && eventData[4] == 55) {
+							if (eventData[3] == 100 && eventData[4] == 56) {
 								pad.buttons[YELLOW] = true;		// 1sus
 								pad.buttons[ORANGE] = true;							
 								chordSelected = true;
 							}
 							else
 
-							if (eventData[3] == 106 && eventData[4] == 54) {
+							if (eventData[3] == 105 && eventData[4] == 53) {
 								pad.buttons[YELLOW] = true;		// 1/3
 								pad.buttons[BLUE] = true;							
 								chordSelected = true;
@@ -696,7 +721,7 @@ async function doLavaGenieSetup(device) {
 							}
 							else
 								
-							if (eventData[3] == 139 && eventData[4] == 215) {
+							if (eventData[3] == 132 && eventData[4] == 216) {
 								pad.buttons[ORANGE] = true;		// 3b
 								pad.buttons[BLUE] = true;		
 								pad.buttons[RED] = true;							
@@ -704,7 +729,7 @@ async function doLavaGenieSetup(device) {
 							}
 							else
 
-							if (eventData[3] == 138 && eventData[4] == 214) {
+							if (eventData[3] == 137 && eventData[4] == 213) {
 								pad.buttons[ORANGE] = true;		// 4/6
 								pad.buttons[BLUE] = true;							
 								chordSelected = true;
@@ -724,14 +749,14 @@ async function doLavaGenieSetup(device) {
 							}
 							else
 								
-							if (eventData[3] == 165 && eventData[4] == 249) {
+							if (eventData[3] == 169 && eventData[4] == 245) {
 								pad.buttons[ORANGE] = true;		// 4m
 								pad.buttons[RED] = true;							
 								chordSelected = true;
 							}	
 							else
 								
-							if (eventData[3] == 177 && eventData[4] == 237) {
+							if (eventData[3] == 199 && eventData[4] == 155) {
 								pad.buttons[GREEN] = true;		// 3m
 								pad.buttons[BLUE] = true;								
 								chordSelected = true;
@@ -945,7 +970,7 @@ async function fetchStreams() {
 
 	const streamSong = document.querySelector("#stream_song");	
 	activeStreams = document.querySelector("#activeStreams");	
-	activeStreams.options[0] = new Option("**UNUSED**", "activeStreams", false, false);		
+	activeStreams.options[0] = new Option("NOT USED", "activeStreams", false, false);		
 
 	activeStreams.addEventListener("click", async () => {
 		console.debug("fetchStreams refresh streams");
@@ -955,7 +980,7 @@ async function fetchStreams() {
 		const items = res.querySelectorAll('item');
 		const temp = activeStreams.selectedIndex;
 		activeStreams.innerHTML = "";
-		activeStreams.options[0] = new Option("**UNUSED**", "activeStreams", false, false);					
+		activeStreams.options[0] = new Option("NOT USED", "activeStreams", false, false);					
 		let count = 1;
 		
 		for (item of items) {		
@@ -1101,6 +1126,14 @@ function startXMPP() {
 			const __ = _converse.__;
 			const html = converse.env.html;
 			const Strophe = converse.env.Strophe;
+			
+			_converse.api.listen.on('parseMessage', (stanza, attrs) => {
+				return parseStanza(stanza, attrs);
+			});	
+			
+			_converse.api.listen.on('parseMUCMessage', (stanza, attrs) => {
+				return parseStanza(stanza, attrs);
+			});				
 
 			_converse.api.listen.on('getToolbarButtons', function(toolbar_el, buttons)	{
 				let color = "fill:var(--chat-toolbar-btn-color);";
@@ -1176,6 +1209,38 @@ function startXMPP() {
 	});
 }
 
+function parseStanza(stanza, attrs) {
+	console.log("parseStanza", stanza, attrs);	
+    const json = stanza.querySelector('json');	
+		
+    if (json) {	
+		const metaData = JSON.parse(json.innerHTML);
+		console.log("parseStanza song metadata", metaData);	
+		/*
+			{
+				"bassNote":30,"rootNote":54,"firstNote":50,"thirdNote":54,"fifthNote":57,"displaySymbol":"Dmaj/F#"
+			}
+		*/
+		
+		displayChordAndLyrics(metaData.displaySymbol, " ");
+    }
+	
+	return attrs;
+}
+
+function getSelectedChatBox() {
+	var models = _converse.chatboxes.models;
+	console.debug("getSelectedChatBox", models);
+
+	for (var i=0; i<models.length; i++) 
+	{
+		if (models[i].get('type') === "chatbox" && !models[i].get('hidden')) {
+			return models[i].get('jid');
+		}
+	}
+	return null;
+}
+
 async function doLiberLiveSetup(device) {
 	console.debug('doLiberLiveSetup', device);
 
@@ -1220,9 +1285,7 @@ async function doLiberLiveSetup(device) {
 				if (characteristic.properties.notify) {
 					const handler = await characteristic.startNotifications();
 					let cannotFire = true;
-					let haveFired = false;
-					let tempoDiv = document.getElementById('showTempo');
-					let volDiv = document.getElementById('showVol');					
+					let haveFired = false;				
 					
 					if (!game) {
 						setup();
@@ -1676,6 +1739,13 @@ async function onloadHandler() {
 	orinayo_reg = document.querySelector('#orinayo-reg');	
 	guitarReverb = document.querySelector("#reverb");
 	
+	tempoDiv = document.getElementById('showTempo');
+	volDiv = document.getElementById('showVol');	
+	
+	programChangeEle = document.querySelector("#program-change");
+	autoFillCheckedEle = document.querySelector("#autoFill");
+	introEndCheckedEle = document.querySelector("#introEnd");		
+	
 	document.body.addEventListener('click', function(event) 	{
 		// TODO
 		if (inputDeviceType == "liberlivec1") initLiberLive();
@@ -1749,6 +1819,8 @@ async function onloadHandler() {
 	});		
 	
 	lyricsCanvas = document.querySelector("#lyrics");
+	lyricsContext = lyricsCanvas.getContext('2d');	
+	
 	const board = document.querySelector(".pedalboard");
 	const chordpro = document.querySelector("#chordpro");
 	const chatview = document.querySelector("#chatview");	
@@ -1813,13 +1885,10 @@ async function onloadHandler() {
 	});	
 	
 	const showLyrics = document.querySelector("#show_lyrics");
-	const lyricsContext = lyricsCanvas.getContext('2d');
 	lyricsContext.fillStyle = "#000000";	
     lyricsContext.fillRect(0, 0, lyricsCanvas.width, lyricsCanvas.height);	
 	
 	showLyrics.addEventListener('click', function(event) {
-		if (songSequence == null) return;
-
 		chatview.style.display = "none";		
 		board.style.display = "none";
 		chordpro.style.display = "none";	
@@ -1938,6 +2007,9 @@ async function onloadHandler() {
 			});				
 		}
 	});
+	
+	muteChords = document.getElementById("mute-chords");
+	vocalistMode = document.getElementById("vocalist-mode");
 	
 	getStreamDeck();
 	letsGo();
@@ -2295,7 +2367,8 @@ function handleBinaryFile(filename, data) {
 function setTempo(tmpo) {
 	tempo = tmpo;
 	document.querySelector("#tempo").value = tempo; 
-	document.getElementById('showTempo').innerText = tempo;
+	tempoDiv.innerText = tempo;
+	
 	if (window.delay) delay.delayTime.value = 60 / tmpo;
 	
 	if (writeCharacteristic) {	// liberlive sync
@@ -2376,7 +2449,7 @@ function handleSevenButtons(name, code) {
 function handleNumPad(name, code) {
 	var handled = false;	
 	
-	if (keyboard.get(" ")) {
+	if (keyboard.get(" ") || code == "NumpadEnter") {
 		pad.buttons[LOGO] = true;
 		if (keyboard.get("Backspace")) pad.buttons[YELLOW] = true; 	// End1
 		handled = true;				
@@ -2713,13 +2786,15 @@ function handleNoteOn(note, device, velocity, channel) {
 				tonic = Tonal.Midi.toMidi(detectedChord.tonic + "1") % 12;
 			}
 			
-			// orinayo.innerHTML = key + " - " + detectedChord.symbol;									
 			const chordKey = "key" + tonic + "_" + arrChordType + "_" + SECTION_IDS[sectionChange];
-			const bassKey = "key" + (chord[0] % 12) + "_" + arrChordType + "_" + SECTION_IDS[sectionChange];		
+			const bassKey = "key" + (chord[0] % 12) + "_" + arrChordType + "_" + SECTION_IDS[sectionChange];			
+			const chordSymbol = KEYS[tonic] + arrChordType + (chord.length == 4 ? "/" + KEYS[(chord[0] % 12)] : "");	
+
+			orinayo.innerHTML = chordSymbol.replace("maj", "");												
 
 			if (arranger == "webaudio" && realInstrument && styleStarted) {	
-				const bassChecked = document.getElementById("arr-instrument-17")?.checked;
-				const chordChecked = document.getElementById("arr-instrument-18")?.checked;
+				const bassChecked = bassCheckedEle?.checked;
+				const chordChecked = chordCheckedEle?.checked;
 				console.debug("playing chord", bassChecked, bassKey, chordChecked, chordKey);					
 				
 				if (bassLoop && bassChecked) bassLoop.update(bassKey, false);
@@ -3370,7 +3445,7 @@ async function setupUI(config,err) {
 	
 	let realGuitarIndex = 0;
 	
-	realguitar.options[0] = new Option("**UNUSED**", "none", config.realguitar == "none");
+	realguitar.options[0] = new Option("NOT USED", "none", config.realguitar == "none");
 	realguitar.options[1] = new Option("Internal Guitar", "Internal_Guitar", config.realguitar == "Internal_Guitar");			
 	realguitar.options[2] = new Option("Funk One - 16th (90-120 BPM)", "Funk1_S_16th_90_120", config.realguitar == "Funk1_S_16th_90_120");			
 	realguitar.options[3] = new Option("Funk Three - 16th (90-120 BPM)", "Funk3_S_16th_90_120", config.realguitar == "Funk3_S_16th_90_120");
@@ -3418,7 +3493,7 @@ async function setupUI(config,err) {
 	createStyleList(config, arrangerStyle, arrangerGrp);
 		
 	const arrangerSf2 =  document.getElementById("arrangerSf2");
-	arrangerSf2.options[0] = new Option("**UNUSED**", "arrangerSf2");	
+	arrangerSf2.options[0] = new Option("NOT USED", "arrangerSf2");	
 	let sf2Selected = false;
 	let iSf2 = 0;	
 	
@@ -3439,7 +3514,7 @@ async function setupUI(config,err) {
 			}				
 		});
 		
-		songSeq.options[0] = new Option("**UNUSED**", "songSeq");
+		songSeq.options[0] = new Option("NOT USED", "songSeq");
 
 		for (var i=0; i<song_sequences.length; i++) {
 			let selectedSong = false;
@@ -3646,8 +3721,8 @@ async function setupUI(config,err) {
 	strum2 = config.strum2 || strum2;
 	strum3 = config.strum3 || strum3;
 	
-	const effectsPreset =  document.getElementById("effectsPreset");
-	const guitarPosition = document.getElementById("guitarPosition");
+	effectsPreset =  document.getElementById("effectsPreset");
+	guitarPosition = document.getElementById("guitarPosition");
 	guitarPosition.selectedIndex = config.strumPos
 	
 	guitarStrum[1].addEventListener("change", function()
@@ -3672,7 +3747,7 @@ async function setupUI(config,err) {
 	});	
 
 	const guitarType = document.getElementById("guitarType");
-	guitarType.options[0] = new Option("**UNUSED**", "none", config.guitarName == "none");	
+	guitarType.options[0] = new Option("NOT USED", "none", config.guitarName == "none");	
 	guitarType.options[1] = new Option("RG Acoustic", "0250_RG_Acoustic_SF2_file", config.guitarName == "0250_RG_Acoustic_SF2_file", config.guitarName == "0250_RG_Acoustic_SF2_file");	
 	guitarType.options[2] = new Option("Acoustic Guitar", "0253_Acoustic_Guitar_sf2_file", config.guitarName == "0253_Acoustic_Guitar_sf2_file", config.guitarName == "0253_Acoustic_Guitar_sf2_file");	
 	guitarType.options[3] = new Option("Aspirin", "0250_Aspirin_sf2_file", config.guitarName == "0250_Aspirin_sf2_file", config.guitarName == "0250_Aspirin_sf2_file");	
@@ -3810,12 +3885,12 @@ async function setupUI(config,err) {
 
 	setGigladUI();
    
-	midiOut.options[0] = new Option("**UNUSED**", "midiOutSel");
-	midiFwd.options[0] = new Option("**UNUSED**", "midiFwdSel");
-	midiPads.options[0] = new Option("**UNUSED**", "midiPadsSel");	
+	midiOut.options[0] = new Option("NOT USED", "midiOutSel");
+	midiFwd.options[0] = new Option("NOT USED", "midiFwdSel");
+	midiPads.options[0] = new Option("NOT USED", "midiPadsSel");	
 
-	midiChordTracker.options[0] = new Option("**UNUSED**", "midiChordTrackerSel");
-	midiIn.options[0] = new Option("**UNUSED**", "midiInSel");
+	midiChordTracker.options[0] = new Option("NOT USED", "midiChordTrackerSel");
+	midiIn.options[0] = new Option("NOT USED", "midiInSel");
 	midiPads.options[1] = new Option("Sound Font", "soundfont");	
 	
 	if (config.padsDevice == "soundfont") {
@@ -3984,11 +4059,11 @@ async function setupUI(config,err) {
 	const realBassLoop = document.getElementById("realbassLoop");		
 	const realChordsLoop = document.getElementById("realchordLoop");
 
-	guitarDevice.options[0] = new Option("**UNUSED**", "guitarDevice", false, false);	
-	realDrumsDevice.options[0] = new Option("**UNUSED**", "realDrumsDevice", false, false);
-	realDrumsLoop.options[0] = new Option("**UNUSED**", "realDrumsLoop", false, false);		
-	realBassLoop.options[0] = new Option("**UNUSED**", "realBassLoop", false, false);		
-	realChordsLoop.options[0] = new Option("**UNUSED**", "realChordsLoop", false, false);
+	guitarDevice.options[0] = new Option("NOT USED", "guitarDevice", false, false);	
+	realDrumsDevice.options[0] = new Option("NOT USED", "realDrumsDevice", false, false);
+	realDrumsLoop.options[0] = new Option("NOT USED", "realDrumsLoop", false, false);		
+	realBassLoop.options[0] = new Option("NOT USED", "realBassLoop", false, false);		
+	realChordsLoop.options[0] = new Option("NOT USED", "realChordsLoop", false, false);
 			
 	for (var i=0; i<drum_loops.length; i++) {
 		const drumLoop = drum_loops[i];
@@ -4230,9 +4305,14 @@ async function setupUI(config,err) {
 			//console.debug("Received after touch message", e);
 		});		
 		
-		input.addListener("programchange", "all", function (e) {
+		input.addListener("programchange", "all", function (e) {	// recall slot - use with m-vave foot control and desktop app BLE -> MIDI IN
 			console.debug("Received program change message", e.value);
-			recallRegistration(e.value + 1);
+			
+			if (styleStarted) {
+				handleEncoderPress(e.value);
+			} else {
+				recallRegistration(e.value + 1);
+			}
 		});		
 
 		
@@ -4281,12 +4361,12 @@ async function setupUI(config,err) {
 				// CC 15 - start/stop
 				// CC 16 - next variation
 
-				const keysSound1El = document.querySelector("#audio-vol-0");
-				const keysSound2El = document.querySelector("#audio-vol-1");
+				const keysSound1El = midiVolumeEle[0];
+				const keysSound2El = midiVolumeEle[1];
 				
-				const drumEl = document.querySelector("#audio-vol-16");
-				const bassEl = document.querySelector("#audio-vol-17");
-				const chordEl = document.querySelector("#audio-vol-18");				
+				const drumEl = midiVolumeEle[16];
+				const bassEl = midiVolumeEle[17];
+				const chordEl = midiVolumeEle[18];			
 				
 				if (e?.controller.number == 14 && e.value == 127) 
 				{					
@@ -4366,21 +4446,21 @@ async function setupUI(config,err) {
 			resetXTouch();	
 
 			if (registration && parseInt(registration) > 0 && midiOutput && midiOutput.name == "X-TOUCH MINI") {
-				const slot = registration > 8 ? registration - 1 : registration;
+				//const slot = registration > 8 ? registration - 1 : registration;
 				//setXTouchButton(slot, "flash");
 			}					
 		}			
 	}									
 	
-	document.querySelector("#autoFill").checked = config.autoFill;	
-	document.querySelector("#introEnd").checked = config.introEnd;
+	autoFillCheckedEle.checked = config.autoFill;	
+	introEndCheckedEle.checked = config.introEnd;
 	
 	guitarReverb.checked = config.reverb;
 	setupPedalBoard(guitarContext, guitarName, guitarDeviceId, guitarReverb.checked);
 	
 	microphone.checked = config.microphone;	
 	setupMicrophone();	
-	document.querySelector("#program-change").checked = config.programChange;	
+	programChangeEle.checked = config.programChange;	
 	document.querySelector("#volume").value = (config.guitarVolume || guitarVolume) * 100;
 	
 	enableSequencer((!!midiRealGuitar || guitarName != "none" ) && realGuitarStyle != "none");	
@@ -4463,7 +4543,7 @@ function drumLoopChanged(realDrumsLoop) {
 
 function createDrumList(config, realDrumsLoop, realChordsLoop) {
 	realDrumsLoop.innerHTML = "";
-	realDrumsLoop.options[0] = new Option("**UNUSED**", "realDrumsLoop");	
+	realDrumsLoop.options[0] = new Option("NOT USED", "realDrumsLoop");	
 	realDrumsLoop.selectedIndex = 0;
 	
 	let s = 1;
@@ -4499,7 +4579,7 @@ function createDrumList(config, realDrumsLoop, realChordsLoop) {
 
 function createBassList(config, realBassLoop, realChordsLoop) {
 	realBassLoop.innerHTML = "";
-	realBassLoop.options[0] = new Option("**UNUSED**", "realBassLoop");	
+	realBassLoop.options[0] = new Option("NOT USED", "realBassLoop");	
 	realBassLoop.selectedIndex = 0;		
 	
 	let s = 1;
@@ -4535,7 +4615,7 @@ function createBassList(config, realBassLoop, realChordsLoop) {
 
 function createStyleList(config, arrangerStyle, arrangerGrp) {
 	arrangerStyle.innerHTML = "";
-	arrangerStyle.options[0] = new Option("**UNUSED**", "arrangerStyle");	
+	arrangerStyle.options[0] = new Option("NOT USED", "arrangerStyle");	
 	let styleSelected = false;
 	let iStyle = 0;
 	
@@ -4590,41 +4670,56 @@ function setupMidiChannels() {
 		return;
 	}
 	
+	drumCheckedEle = document.getElementById("arr-instrument-16");
+	bassCheckedEle = document.getElementById("arr-instrument-17");
+	chordCheckedEle = document.getElementById("arr-instrument-18");
+	
+	drumCheckedEle.addEventListener("click", function(event) {
+		pressFootSwitch(7);
+	});
+
+	bassCheckedEle.addEventListener("click", function(event) {
+		pressFootSwitch(8);		
+	});
+	
+	chordCheckedEle.addEventListener("click", function(event) {
+		pressFootSwitch(9);		
+	});	
+	
 	for (let i=0; i<19; i++) {
-		const box = document.getElementById("arr-instrument-" + i);
-		if (box) box.checked = !!tempConfig["channel" + i];
+		midiVolumeEle[i] = document.getElementById("audio-vol-" + i);
+		midiInstrCheckedEle[i] = document.getElementById("arr-instrument-" + i);
+		
+		if (midiInstrCheckedEle[i]) midiInstrCheckedEle[i].checked = !!tempConfig["channel" + i];
 	}	
 	
-	keysSound1 = document.getElementById("arr-instrument-0");
-	keysSound2 = document.getElementById("arr-instrument-1");
+	keysSound1 = midiInstrCheckedEle[0];
+	keysSound2 = midiInstrCheckedEle[1];
+	
+	midiVolumeEle[0].value = keysSound1Vol;
+	midiVolumeEle[1].value = keysSound2Vol;	
 
-	const keysSound1Ele = document.querySelector("#audio-vol-0");
-	const keysSound2Ele = document.querySelector("#audio-vol-1");
-
-	keysSound1Ele.value = keysSound1Vol;
-	keysSound2Ele.value = keysSound2Vol;	
-
-	keysSound1Ele.addEventListener("input", function(event) {
+	midiVolumeEle[0].addEventListener("input", function(event) {
 		keysSound1Vol = +event.target.value; 			
 	});
 
-	keysSound2Ele.addEventListener("input", function(event) {
+	midiVolumeEle[1].addEventListener("input", function(event) {
 		keysSound2Vol = +event.target.value; 			
 	});
 	
-	document.querySelector("#audio-vol-16").addEventListener("input", function(event) {
+	midiVolumeEle[16].addEventListener("input", function(event) {
 		drumVol = +event.target.value; 
 		savedDrumVol = drumVol;			
 		if (drumLoop) drumLoop.setVolume(drumVol / 100);			
 	});
 
-	document.querySelector("#audio-vol-17").addEventListener("input", function(event) {
+	midiVolumeEle[17].addEventListener("input", function(event) {
 		bassVol = +event.target.value; 
 		savedBassVol = bassVol;	
 		if (bassLoop) bassLoop.setVolume(bassVol / 100);			
 	});
 	
-	document.querySelector("#audio-vol-18").addEventListener("input", function(event) {
+	midiVolumeEle[18].addEventListener("input", function(event) {
 		chordVol = +event.target.value; 
 		savedChordVol = chordVol;			
 		if (chordLoop) chordLoop.setVolume(chordVol / 100);			
@@ -4773,12 +4868,12 @@ function saveConfig() {
 	config.sf2Name = arrSynth ? arrSynth.name : null;
 	config.arrangerGroup = arrangerGroup;
 	config.rgIndex = rgIndex;
-	config.autoFill = document.querySelector("#autoFill").checked;
-	config.introEnd = document.querySelector("#introEnd").checked;
+	config.autoFill = autoFillCheckedEle.checked;
+	config.introEnd = introEndCheckedEle.checked;
 	config.reverb = guitarReverb.checked;
 	config.microphone = microphone.checked;
-	config.programChange = document.querySelector("#program-change").checked;
-	config.strumPos = document.getElementById("guitarPosition").selectedIndex;
+	config.programChange = programChangeEle.checked;
+	config.strumPos = guitarPosition.selectedIndex;
 	config.liberLiveChrd1 = liberLive.chord1;
 	config.liberLiveChrd2 = liberLive.chord2;
 	config.liberLiveDrms1 = liberLive.drums1;
@@ -4812,7 +4907,7 @@ function saveConfig() {
 function doBreak() {
 	console.debug("doBreak " + arranger);	
 
-	if (((drumLoop || chordLoop) && realInstrument) && document.getElementById("arr-instrument-16")?.checked) 	
+	if (((drumLoop || chordLoop) && realInstrument) && drumCheckedEle?.checked) 	
 	{
 		if (sectionChange == 0) {
 			drumLoop.update('brka', false);		
@@ -4886,7 +4981,7 @@ function doFill() {
 	console.debug("doFill " + arranger);
 	
 	
-	if (realInstrument && document.getElementById("arr-instrument-16")?.checked) {
+	if (realInstrument && drumCheckedEle?.checked) {
 		console.debug("doFill webaudio", sectionChange);
 		
 		if (drumLoop && sectionChange == 0) drumLoop.update('fila', false);
@@ -5108,7 +5203,7 @@ function doQY100Fill() {
 }
 
 function setSffVar(changed) {
-	const autoFill = document.querySelector("#autoFill").checked;
+	const autoFill = autoFillCheckedEle?.checked;
 	
 	if (sectionChange == 0) {
 		currentSffVar = "Main A";		
@@ -5262,7 +5357,7 @@ function getVelocity() {
 }
 
 function getPitches(seq) {
-	const pos = parseInt(document.getElementById("guitarPosition").value);
+	const pos = parseInt(guitarPosition.value);
 	__6th = E +O*(pos+2), __5th = A +O*(pos+2), __4th = D +O*(pos+2), __3rd = G +O*(pos+2), __2nd = B +O*(pos+2), __1st = E +O*(pos+3);	
 	const p = [];
 	const arrChord = (firstChord.length == 4 ? firstChord[1] : firstChord[0]) % 12;
@@ -5325,10 +5420,10 @@ function playPads(chords, opts) {
 function playChord(chord, root, type, bass) {	
 	console.debug("playChord", chord, root, type, bass);
 
-	const guitarPosition = document.getElementById("guitarPosition").selectedIndex;	
+	const guitarPos = guitarPosition.selectedIndex;	
 	const guitarDuration = 240 / tempo; 
 	const bassNote = (chord.length == 4 ? chord[0] : chord[0] - 12);
-	const rootNote = (chord.length == 4 ? chord[0] : chord[0] - 12) + (guitarPosition * 12);	
+	const rootNote = (chord.length == 4 ? chord[0] : chord[0] - 12) + (guitarPos * 12);	
 	const firstNote = (chord.length == 4 ? chord[1] : chord[0]);	
 	const thirdNote = (chord.length == 4 ? chord[2] : chord[1]);	
 	const fifthNote = (chord.length == 4 ? chord[3] : chord[2]);
@@ -5340,17 +5435,25 @@ function playChord(chord, root, type, bass) {
 		lastChord = firstChord;	
 		firstChord = chord;
 		
-		if (inputDeviceType == "lavagenie" || inputDeviceType == "keyboard") pad.axis[STRUM] = autoStrumUpDown();
+		if (inputDeviceType == "lavagenie" || inputDeviceType == "keyboard" || songSequence?.data?.music) {
+			pad.axis[STRUM] = autoStrumUpDown();
+		}
 			
 		const arrChord = (firstChord.length == 4 ? firstChord[1] : firstChord[0]) % 12;
 		const key = "key" + arrChord + "_" + arrChordType + "_" + SECTION_IDS[sectionChange];
 		const bassKey = "key" + (bassNote % 12) + "_" + arrChordType + "_" + SECTION_IDS[sectionChange];
 		const chordSymbol = KEYS[arrChord] + arrChordType + (firstChord.length == 4 ? "/" + KEYS[(bassNote % 12)] : "");
+		const displaySymbol = chordSymbol.replace("maj", "");
 		
-		orinayo.innerHTML = chordSymbol;
+		orinayo.innerHTML = displaySymbol;
 		
-		if (_converse && activeStreams && activeStreams.value != "activeStreams") {
-			_converse.api.send(converse.env.$msg({to: activeStreams.value + "@" + _converse.api.connection.get().domain, type: 'chat'}).c('body').t(chordSymbol));							
+		if (_converse) {
+			const jid = getSelectedChatBox();
+			
+			if (jid) {
+				const json = {bassNote, rootNote, firstNote, thirdNote, fifthNote, displaySymbol};
+				_converse.api.send(converse.env.$msg({to: jid, type: 'chat'}).c("json", {'xmlns': 'urn:xmpp:json:0'}).t(JSON.stringify(json)));							
+			}
 		}
 		
 
@@ -5401,9 +5504,9 @@ function playChord(chord, root, type, bass) {
 		}
 
 		if (pad.axis[STRUM] == STRUM_UP || pad.axis[STRUM] == STRUM_DOWN)	{
-			const drumChecked = document.getElementById("arr-instrument-16")?.checked;
-			const bassChecked = document.getElementById("arr-instrument-17")?.checked;
-			const chordChecked = document.getElementById("arr-instrument-18")?.checked;
+			const drumChecked = drumCheckedEle?.checked;
+			const bassChecked = bassCheckedEle?.checked;
+			const chordChecked = chordCheckedEle?.checked;
 			
 			if (padsDevice?.stopNote || padsDevice?.name == "soundfont") {
 				//console.debug("playChord pads", chord);
@@ -5535,7 +5638,7 @@ function clearAllSffNotes() {
 			outputStopNote(note, channel + 1, {velocity: event.velocity});
 			
 			if (midiSynth) {
-				const instrumentNode = document.getElementById("arr-instrument-" + channel);
+				const instrumentNode = midiInstrCheckedEle[channel];
 				if (instrumentNode) instrumentNode.parentNode.parentNode.parentNode.parentNode.querySelector("tbody > tr:nth-child(" + (parseInt(channel) + 1) + ") > td:nth-child(" + (4 + parseInt(note) + 1) + ")").classList.remove("note-on");				
 			}
 		}
@@ -5736,30 +5839,30 @@ function pressFootSwitch(code) {
 	if (arranger == "sff") 
 	{				
 		if (code == 6) {	// drum toggle
-			const instrumentNode = document.getElementById("arr-instrument-9");		
+			const instrumentNode = midiInstrCheckedEle[9];		
 			instrumentNode.checked = !instrumentNode.checked;			
 		}
 		else
 			
 		if (code == 7) {	// drum toggle
-			const instrumentNode = document.getElementById("arr-instrument-10");		
+			const instrumentNode = midiInstrCheckedEle[10];		
 			instrumentNode.checked = !instrumentNode.checked;			
 		}
 		
 		if (code == 8 || code == 9) {	// chord toggle
-			const chord1 = document.getElementById("arr-instrument-11");		
+			const chord1 = midiInstrCheckedEle[11];		
 			chord1.checked = !chord1.checked;
 
-			const chord2 = document.getElementById("arr-instrument-12");		
+			const chord2 = midiInstrCheckedEle[12];		
 			chord2.checked = !chord2.checked;
 
-			const chord3 = document.getElementById("arr-instrument-13");		
+			const chord3 = midiInstrCheckedEle[13];		
 			chord3.checked = !chord3.checked;
 
-			const chord4 = document.getElementById("arr-instrument-14");		
+			const chord4 = midiInstrCheckedEle[14];		
 			chord4.checked = !chord4.checked;
 
-			const chord5 = document.getElementById("arr-instrument-15");		
+			const chord5 = midiInstrCheckedEle[15];		
 			chord5.checked = !chord5.checked;			
 		}		
 		
@@ -5976,9 +6079,9 @@ function playSectionCheck() {
 function changeArrSection(changed) {	
 	
 	if (arranger == "webaudio") {
-		const autoFill = document.querySelector("#autoFill").checked;	
+		const autoFill = autoFillCheckedEle?.checked;	
 				
-		if (realInstrument && drumLoop && document.getElementById("arr-instrument-16")?.checked) {
+		if (realInstrument && drumLoop && drumCheckedEle?.checked) {
 			console.debug("changeArrSection pressed " + changed, sectionChange);		
 			orinayo_section.innerHTML = ">" + orinayo_section.innerHTML;	
 			
@@ -6122,18 +6225,18 @@ function doChord() {
 	if (pad.buttons[START]) {	// start + button activates pad mode
 	
 		if (pad.buttons[YELLOW] && pad.buttons[BLUE]) { // Guitar position C3
- 			document.getElementById("guitarPosition").selectedIndex = 2;			
+ 			guitarPosition.selectedIndex = 2;			
 		}
 		else 
 			
 		if (pad.buttons[GREEN] && pad.buttons[RED]) { // Guitar position C4
-			document.getElementById("guitarPosition").selectedIndex = 0;
+			guitarPosition.selectedIndex = 0;
 		}
 		
 		else 
 			
 		if (pad.buttons[RED] && pad.buttons[YELLOW]) { // Guitar postion C5
-			document.getElementById("guitarPosition").selectedIndex = 1;			
+			guitarPosition.selectedIndex = 1;			
 		}
 		else 
 			
@@ -6342,21 +6445,6 @@ function startStopWebAudio() {
 	let gapTime = 0.5;
 	
 	console.debug("startStopWebAudio", styleStarted, pad.buttons[YELLOW]);
-	const drumChecked = document.getElementById("arr-instrument-16");
-	const bassChecked = document.getElementById("arr-instrument-17");
-	const chordChecked = document.getElementById("arr-instrument-18");
-
-	drumChecked.addEventListener("click", function(event) {
-		pressFootSwitch(7);
-	});
-
-	bassChecked.addEventListener("click", function(event) {
-		pressFootSwitch(8);		
-	});
-	
-	chordChecked.addEventListener("click", function(event) {
-		pressFootSwitch(9);		
-	});
 	
 	if (!styleStarted) {
 		if (recordMode) startRecording();				
@@ -6365,26 +6453,26 @@ function startStopWebAudio() {
 
 		if (songSequence) {
 			orinayo_section.innerHTML = ">Arr A";					
-			if (drumLoop && drumChecked?.checked) drumLoop.start('arra', goTime);
-			if (bassLoop && bassChecked?.checked) bassLoop.start("key" + (keyChange % 12), goTime);
-			if (chordLoop && chordChecked?.checked) chordLoop.start("key" + (keyChange % 12), goTime);
+			if (drumLoop && drumCheckedEle?.checked) drumLoop.start('arra', goTime);
+			if (bassLoop && bassCheckedEle?.checked) bassLoop.start("key" + (keyChange % 12), goTime);
+			if (chordLoop && chordCheckedEle?.checked) chordLoop.start("key" + (keyChange % 12), goTime);
 				
 		} else {
 			if ((pad.buttons[YELLOW] || midiNotes.size > 2) && introEnd && drumLoop) {		// intro requires drumbeat			
 				orinayo_section.innerHTML = ">Arr A";
 										
-				if (drumLoop && drumChecked?.checked) {
+				if (drumLoop && drumCheckedEle?.checked) {
 					drumLoop.start('int1', goTime);					
 				
 					setTimeout(() => {
-						if (bassLoop && bassChecked?.checked) bassLoop.start("key" + (keyChange % 12), goTime + (realInstrument.drums.int1.stop / 1000));
-						if (chordLoop && chordChecked?.checked) chordLoop.start("key" + (keyChange % 12), goTime + (realInstrument.drums.int1.stop / 1000));			
+						if (bassLoop && bassCheckedEle?.checked) bassLoop.start("key" + (keyChange % 12), goTime + (realInstrument.drums.int1.stop / 1000));
+						if (chordLoop && chordCheckedEle?.checked) chordLoop.start("key" + (keyChange % 12), goTime + (realInstrument.drums.int1.stop / 1000));			
 					}, realInstrument.drums.int1.stop);
 				}
 			} else {
-				if (drumLoop && drumChecked?.checked) drumLoop.start('arra', goTime);						
-				if (bassLoop && bassChecked?.checked) bassLoop.start("key" + (keyChange % 12), goTime);
-				if (chordLoop && chordChecked?.checked) chordLoop.start("key" + (keyChange % 12), goTime);							
+				if (drumLoop && drumCheckedEle?.checked) drumLoop.start('arra', goTime);						
+				if (bassLoop && bassCheckedEle?.checked) bassLoop.start("key" + (keyChange % 12), goTime);
+				if (chordLoop && chordCheckedEle?.checked) chordLoop.start("key" + (keyChange % 12), goTime);							
 			}
 			
 		}
@@ -6426,7 +6514,7 @@ function toggleStartStop() {
 		}			
 	}
 	
-	const introEnd = document.querySelector("#introEnd")?.checked;	
+	const introEnd = introEndCheckedEle?.checked;	
 		
 	if (arranger == "webaudio") {				
 		if ((drumLoop || chordLoop) && realInstrument) {
@@ -6862,9 +6950,9 @@ function startStopSequencer() {
 
 function sendProgramChange(event) {
 	const channel = getCasmChannel(currentSffVar, event.channel);
-	const programChannel = document.getElementById("midi-channel-" + channel);
+	const programChannel = midiInstrCheckedEle[channel];
 	
-	if (programChannel && document.querySelector("#program-change")?.checked) {
+	if (programChannel && programChangeEle?.checked) {
 		event.programNumber = programChannel.selectedIndex;	
 	}
 		
@@ -6936,7 +7024,7 @@ function doStartStopSequencer() {
 			
 			doSffSInt();	
 
-			const introEnd = document.querySelector("#introEnd")?.checked;
+			const introEnd = introEndCheckedEle?.checked;
 
 			if (introEnd) {
 				currentSffVar = "Intro A";	
@@ -7135,7 +7223,7 @@ function nextArrNote() {
 		currentPlayNote++;		
 		//console.debug("nextArrNote old", currentSffVar);
 
-		const introEnd = document.querySelector("#introEnd")?.checked;
+		const introEnd = introEndCheckedEle?.checked;
 			
 		if (currentPlayNote >= arrSequence.data[currentSffVar].length) {			
 			currentPlayNote = 0;
@@ -7306,8 +7394,7 @@ function getNoteName(chordRoot) {
 
 function scheduleSongNote() {
 	
-	if (songSequence?.data.music[currentSongNote]) {
-		const lyricsContext = lyricsCanvas.getContext('2d');			
+	if (songSequence?.data.music[currentSongNote]) {			
 		const event = songSequence.data.music[currentSongNote];	
 		console.debug("scheduleSongNote", event);		
 		
@@ -7376,7 +7463,7 @@ function scheduleSongNote() {
 			else if (event.chordType == 32)		// sus
 				chord = [note, note + 5, note + 7];	
 				
-			let displayShape = chordShape.shape +  " " + getChordType(event.chordType);
+			displayShape = chordShape.shape +  " " + getChordType(event.chordType);
 
 			if (event.chordRoot != event.chordBass) {
 				chord.unshift(bassShape.note);
@@ -7391,9 +7478,12 @@ function scheduleSongNote() {
 				if (!game) {
 					setup();
 					resetGuitarHero();
-				}				
-				playChord(chord, event.chordRoot,  event.chordType, event.chordBass);
-				//updateCanvas();				
+				}
+				
+				if (!muteChords.checked) {
+					playChord(chord, event.chordRoot,  event.chordType, event.chordBass);
+					//updateCanvas();				
+				}
 			}
 		}
 		else
@@ -7410,37 +7500,73 @@ function scheduleSongNote() {
 		else
 			
 		if (event.type == "lyrics") {
-			console.debug("scheduleSongNote lyrics", event.text);
 			
-			if (lyricsCanvas.style.display == "none") {			
-				const cntrl = document.getElementById("lyrics");
-				let lyrics = cntrl.innerHTML + event.text;
+			if (event.text == "\n") {
+				console.debug("scheduleSongNote page break");
+				clearLyrics(lyricsContext);					
+			
+			} else {
+				console.debug("scheduleSongNote lyrics", event.text);
 				
-				if (cntrl.innerHTML.length > 80) {
-					lyrics = event.text;
-				}
+				if (lyricsCanvas.style.display == "none") {			
+					const cntrl = document.getElementById("lyrics");
+					let lyrics = cntrl.innerHTML + event.text;
+					
+					if (cntrl.innerHTML.length > 80) {
+						lyrics = event.text;
+					}
 
-				cntrl.innerHTML = lyrics;
+					cntrl.innerHTML = lyrics;
+				}
+				else {
+					
+					if (vocalistMode.checked) {		// show only lyrics
+						lyricsContext.font = "14px Arial";				
+						const width = lyricsContext.measureText(event.text).width;
+						
+						if ((lyricsX + width) >= lyricsCanvas.width) {
+							lyricsX = 2;
+							lyricsY = lyricsY + 18;					
+						}
+						
+						if (lyricsY > lyricsCanvas.height) {
+							clearLyrics(lyricsContext);				
+						}
+
+						lyricsContext.fillStyle = "#ffffff";
+						lyricsContext.fillText(event.text, lyricsX, lyricsY);				
+						lyricsX = lyricsX + width;	
+						
+					} else {	// show both chords and lyrics
+						displayChordAndLyrics(displayShape, event.text);
+					}
+				}						
 			}
-			else {
-				lyricsContext.font = "14px Arial";				
-				const width = lyricsContext.measureText(event.text).width;
-				
-				if ((lyricsX + width) >= lyricsCanvas.width) {
-					lyricsX = 2;
-					lyricsY = lyricsY + 18;					
-				}
-				
-				if (lyricsY > lyricsCanvas.height) {
-					clearLyrics(lyricsContext);				
-				}
-
-				lyricsContext.fillStyle = "#ffffff";
-				lyricsContext.fillText(event.text, lyricsX, lyricsY);				
-				lyricsX = lyricsX + width;	
-			}						
-		}			
+		}
 	}
+}
+
+function displayChordAndLyrics(chord, lyrics) {
+	console.debug("displayChord", chord);
+	
+	lyricsContext.font = "10px Arial";				
+	const width1 = lyricsContext.measureText(lyrics).width;
+	let width = lyricsContext.measureText(chord + " ").width;
+	if (width1 > width) width = width1;
+
+	if ((lyricsX + width) >= lyricsCanvas.width) {
+		lyricsX = 2;
+		lyricsY = lyricsY + 24;					
+	}
+
+	if (lyricsY > lyricsCanvas.height) {
+		clearLyrics(lyricsContext);				
+	}
+
+	lyricsContext.fillStyle = "#ffffff";
+	lyricsContext.fillText(chord, lyricsX, lyricsY);
+	lyricsContext.fillText(lyrics, lyricsX, lyricsY + 12);					
+	lyricsX = lyricsX + width;	
 }
 
 function clearLyrics(lyricsContext) {
@@ -7460,22 +7586,22 @@ function scheduleArrNote() {
 		const beatTime = (0.25 * secondsPerBeat); 		
 		const goTime = audioContext.currentTime + beatTime;
 			
-		if (drumLoop && !drumLoop.looping && document.getElementById("arr-instrument-16")?.checked) {
+		if (drumLoop && !drumLoop.looping && drumCheckedEle?.checked) {
 			drumLoop.start("arra", goTime);
 		}	
 
-		if (bassLoop && !bassLoop.looping && document.getElementById("arr-instrument-17")?.checked) {
+		if (bassLoop && !bassLoop.looping && bassCheckedEle?.checked) {
 			bassLoop.start("key" + (keyChange % 12), goTime);
 		}
 		
-		if (chordLoop && !chordLoop.looping && document.getElementById("arr-instrument-18")?.checked) {
+		if (chordLoop && !chordLoop.looping && chordCheckedEle?.checked) {
 			chordLoop.start("key" + (keyChange % 12), goTime);
 		}		
 				
 		// TODO implement CASM
 		const channel = getCasmChannel(currentSffVar, event.channel); 
 
-		const instrumentNode = document.getElementById("arr-instrument-" + channel);				
+		const instrumentNode = midiInstrCheckedEle[channel];				
 		if (!instrumentNode?.checked) return;
 			
 		if (event?.type == "noteOn") {
@@ -7854,27 +7980,24 @@ function setupRealInstruments() {
 	bassLoop = null;
 	chordLoop = null;
 	
-	let wait = 2000;
+	loopWait = 2000;
 	
 	if (realInstrument.drums) {	
 		drumLoop = new AudioLooper("drum");
 		drumLoop.callback(soundsLoaded, eventStatus);				
 		drumLoop.addUri(realInstrument.drums, realdrumDevice, realInstrument.bpm);
-		wait+=1000;
 	}
 	
 	if (realInstrument.basses) {
 		bassLoop = new AudioLooper("bass");
 		bassLoop.callback(soundsLoaded, eventStatus);		
 		bassLoop.addUri(realInstrument.basses, realdrumDevice, realInstrument.bpm);
-		wait+=1000;
 	}
 	
 	if (realInstrument.chords) {
 		chordLoop = new AudioLooper("chord");
 		chordLoop.callback(soundsLoaded, eventStatus);		
-		chordLoop.addUri(realInstrument.chords, realdrumDevice, realInstrument.bpm);
-		wait+=1000;		
+		chordLoop.addUri(realInstrument.chords, realdrumDevice, realInstrument.bpm);	
 	}
 	
 	if (!registration && realInstrument.bpm) setTempo(realInstrument.bpm);	
@@ -7887,11 +8010,12 @@ function setupRealInstruments() {
 			const slot = registration > 8 ? registration + 1 : (registration == 0 ? 0 : registration);
 			setXTouchButton(slot, "flash");
 		}		
-	}, wait);	
+	}, loopWait);	
 }
 
-function soundsLoaded() {
+function soundsLoaded(cached) {
 	console.debug("audio loaded ok");
+	if (!cached) loopWait+=1000;
 }
 
 function eventStatus(event, id) {
@@ -8063,19 +8187,19 @@ function handleXTouchControlEvent(event) {
 	if (event.controller.number == 9 || event.controller.number == 10) // main volume
 	{		
 		if (drumLoop) {
-			const drumEl = document.querySelector("#audio-vol-16");			
+			const drumEl = midiVolumeEle[16];			
 			drumEl.value = (event.value / 127) * savedDrumVol;
 			drumLoop.setVolume(drumEl.value / 100);
 		}
 		
 		if (bassLoop) {
-			const bassEl = document.querySelector("#audio-vol-17");			
+			const bassEl = midiVolumeEle[17];			
 			bassEl.value = (event.value / 127) * savedBassVol;
 			bassLoop.setVolume(bassEl.value / 100);
 		}
 
 		if (chordLoop) {
-			const chordEl = document.querySelector("#audio-vol-18");							
+			const chordEl = midiVolumeEle[18];								
 			chordEl.value = (event.value / 127) * savedChordVol;
 			chordLoop.setVolume(chordEl.value / 100);
 		}	
@@ -8163,7 +8287,7 @@ function handleButtonPress(panel) {
 function handleEncoderPress(encoder) {
 	console.debug("handleEncoderPress", encoder);	
 	
-	if (encoder == 0) {	
+	if (encoder == 0) {		// BANK 1 - MUTE Instruments
 		savedPadsMode = padsMode == 0 ? savedPadsMode : padsMode;	
 		padsMode = padsMode == 0 ? savedPadsMode : 0;		
 		orinayo_pad.innerHTML =  padsMode == 0 ? "None" : "Pad " + padsMode;
@@ -8172,46 +8296,68 @@ function handleEncoderPress(encoder) {
 	else
 		
 	if (encoder == 1) {		
-		const drumChecked = document.getElementById("arr-instrument-16");
-		drumChecked.checked = !drumChecked.checked;
+		drumCheckedEle.checked = !drumCheckedEle.checked;
 		pressFootSwitch(7);
-		if (input?.name == "X-TOUCH MINI") setXTouchSpeaker(encoder, !drumChecked.checked ? "flash": "off");			
+		if (input?.name == "X-TOUCH MINI") setXTouchSpeaker(encoder, !drumCheckedEle.checked ? "flash": "off");			
 	}
 	else
 
 	if (encoder == 2) {		
-		const bassChecked = document.getElementById("arr-instrument-17");
-		bassChecked.checked = !bassChecked.checked;	
+		bassCheckedEle.checked = !bassCheckedEle.checked;	
 		pressFootSwitch(8);	
-		if (input?.name == "X-TOUCH MINI") setXTouchSpeaker(encoder, !bassChecked.checked ? "flash": "off");		
+		if (input?.name == "X-TOUCH MINI") setXTouchSpeaker(encoder, !bassCheckedEle.checked ? "flash": "off");		
 	}
 	else
 
 	if (encoder == 3) {		
-		const chordChecked = document.getElementById("arr-instrument-18");
-		chordChecked.checked = !chordChecked.checked;	
+		chordCheckedEle.checked = !chordCheckedEle.checked;	
 		pressFootSwitch(9);
-		if (input?.name == "X-TOUCH MINI") setXTouchSpeaker(encoder, !chordChecked.checked ? "flash": "off");		
+		if (input?.name == "X-TOUCH MINI") setXTouchSpeaker(encoder, !chordCheckedEle.checked ? "flash": "off");		
 	}	
 	else
 		
-	if (encoder == 4) {
-      window.dispatchEvent(new CustomEvent('MIDI', { detail: 2 }));	// compressor effect
-	}	
+	if (encoder == 4) {	// BANK 2 - effects
+      window.dispatchEvent(new CustomEvent('MIDI', { detail: 6 }));	// chorus effect
+	}
 	else
 		
 	if (encoder == 5) {
-      window.dispatchEvent(new CustomEvent('MIDI', { detail: 6 }));	// chorus effect
-	}
-
+      window.dispatchEvent(new CustomEvent('MIDI', { detail: 10 }));	// reverb effect
+	}	
+	else
+		
 	if (encoder == 6) {
+      window.dispatchEvent(new CustomEvent('MIDI', { detail: 2 }));	// compressor effect
+	}		
+	else
+		
+	if (encoder == 7) {
       window.dispatchEvent(new CustomEvent('MIDI', { detail: 7 }));	// delay effect
 	}	
 	else
 		
-	if (encoder == 7) {
-      window.dispatchEvent(new CustomEvent('MIDI', { detail: 10 }));	// reverb effect
-	}	
+	if (encoder == 8) {	// BANK 3 - variations
+		sectionChange = 0;
+		changeArrSection(true);
+    }
+	else
+		
+	if (encoder == 9) {
+		sectionChange = 1;
+		changeArrSection(true);  
+    }	
+	else
+		
+	if (encoder == 10) {
+		sectionChange = 2;
+		changeArrSection(true);   
+    }		
+	else
+		
+	if (encoder == 11) {
+		sectionChange = 3;
+		changeArrSection(true);   
+	}		
 }
 
 // -------------------------------------------------------

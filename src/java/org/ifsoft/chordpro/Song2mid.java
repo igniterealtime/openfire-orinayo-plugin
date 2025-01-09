@@ -348,8 +348,12 @@ public class Song2mid {
 		Log.error("Couldn't add title info") ;
 	    }
 	} else if (dir.equals("comment") || dir.equals("c")) {
-	    // Comment
-	    // Ignore comments; No further action
+	    // Comment; Generate a lyric page break
+	    try {
+		m.addPageBreak(timeStamp + ticksPerDivision) ;
+	    } catch(Exception exc) {
+		Log.error("Couldn't add page break (comment)") ;
+	    }
 	} else if (dir.equals("start_of_chorus") || dir.equals("soc")) {
 	    // Start of chorus; Generate a lyric page break
 	    try {
