@@ -3,6 +3,7 @@
 <head>
     <meta charset="utf-8">
     <title>Orin Ayo</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">	
     <link rel="stylesheet" href="./css/bootstrap.css">
     <link rel="stylesheet" href="./dist/converse.min.css" />	
     <link rel="stylesheet" href="./css/synth.css">	
@@ -13,7 +14,66 @@
 </head>
 
 <body>
-  <div style="margin: 10px">
+  <div id="mobile" style="display: none; margin: 5px">
+	<div id="mobile-header">  
+		<table>	
+		<tr valign="top">
+			<td>
+			  <img style="width: 64px; margin-right: 10px;" src="./assets/icon_128.png"/>		
+			</td>
+			<td>
+			  <div id="mobile-toolbar"></div>
+			  <div style="margin-top: 5px;" id="mobile-controller"></div>			  
+			</td>
+			<td>
+			  <div id="mobile-chord-view" style="position: absolute; top: 5px; right: 0;"></div>			
+			  <div id="mobile-arr-view" style="position: absolute; top: 35px; right: 0;"></div>				  
+			</td>
+		</tr>	
+		</table>
+	</div>
+	<div id="mobile-body">
+		<table id="mobile-body-detail">
+		<tr>
+			<td><center>
+				<h4><span style="margin-right: 20px" id="chord-mute"></span>Keys</h4>		
+				<div id="chord-volume"></div>
+				<div id="chord-choice"></div>
+			</center></td>
+			<td><center>
+				<h4><span style="margin-right: 20px" id="lead-mute"></span>Guitar</h4>		
+				<div id="lead-volume"></div>
+				<div id="lead-choice"></div>
+			</center></td>				
+		</tr>	
+		<tr>
+			<td><center>
+				<h4><span style="margin-right: 20px" id="drum-mute"></span>Drums</h4>		
+				<div id="drum-volume"></div>
+				<div id="drum-choice"></div>
+			</center></td>
+			<td><center>
+				<h4><span style="margin-right: 20px" id="bass-mute"></span>Bass</h4>		
+				<div id="bass-volume"></div>
+				<div id="bass-choice"></div>
+			</center></td>				
+		</tr>	
+		<tr valign="top">
+			<td><center>
+				<b><span style="margin-right: 20px" id="play-control"></span>Guitar Control</b>	
+				<div id="control-items"></div>
+			</center></td>
+			<td><center>
+				<b><span style="margin-right: 20px" id="extern-device">Controller</span></b>
+				<div id="control-device"></div>			
+			</center></td>				
+		</tr>	
+		
+		</table>
+	</div>	
+  </div>
+  <div id="desktop" style="display: none">
+    <div style="margin: 10px">
     <input style="display:none" id="load-midifile" type="file" />
 	<table width="100%">	
 	<tr>
@@ -25,7 +85,7 @@
 				<fluent-button appearance="accent" title='Guitar playing style' id="gamepad_mode">Color Tabs</fluent-button>
 				<fluent-button appearance="accent" title='Load external file (drum, chord, bass, midi, sty, etc)' id="load_file">Load</fluent-button>
 				<fluent-button appearance="accent" title='Pair/Unpair Stream Deck' id="stream_deck">Stream Deck</fluent-button>					
-				<fluent-button appearance="accent" title='Pair/Unpair LiberLive/Lava Genie Guitar' style="display: none;" id="bluetooth">Bluetooth</fluent-button>					
+				<fluent-button appearance="accent" title='Pair/Unpair LiberLive/Lava Genie Guitar' style="display: none;" id="bluetooth">BT</fluent-button>					
 				<fluent-button appearance="accent" style="display: none;" id="chorda_bluetooth">BT OFF</fluent-button>	
 				<fluent-button appearance="accent" style="display: none;" id="delete_style">Delete Style</fluent-button>				
 				<fluent-button appearance="accent" style="display: none;" id="toggle_chat">Chat</fluent-button>					
@@ -36,13 +96,13 @@
 				<fluent-button appearance="accent" title='Record performance as video or audio file' style="display: none;" id="record_song">Record</fluent-button>				
 				<fluent-button appearance="accent" title='Stream performance to hosted server' style="display: none;" id="stream_song">Start Stream</fluent-button>					
 				<fluent-button appearance="accent" title='Refresh application for new settings to take effect' id="reset_app">Refresh</fluent-button>			
-			</center><div>	
+			</center></div>	
 			<div id="sequencer2" style="margin:10px">
 			    <span style="font-size: 14px;margin-left:2px" id="sequencer">Tempo:<span id="showTempo">100</span></span>	
 				<input title='Overall Tempo control' id="tempo" type="range" min="30.0" max="180.0" step="1" value="100" style="height: 20px; width: 150px">
 				<span style="display: none;"><input title='Enable microphone' style="margin-left: 10px;margin-right: 10px;" id="microphone" type="checkbox">Mic</span>
-				<input title='Play Drum Fills automatically when variation chnages' style="margin-left: 10px;margin-right: 10px;" id="autoFill" type="checkbox" checked>Auto Fill
-				<input title='Play Intro end Ending' style="margin-left: 10px;margin-right: 10px;" id="introEnd" type="checkbox" checked>Intro/Outro
+				<span id="control-fill"><input title='Play Drum Fills automatically when variation chnages' style="margin-left: 10px;margin-right: 10px;" id="autoFill" type="checkbox" checked>Auto Fill</span>
+				<span id="control-intro"><input title='Play Intro end Ending' style="margin-left: 10px;margin-right: 10px;" id="introEnd" type="checkbox" checked>Intro/Outro</span>
 				<input title='Enable Guitar pedal effects' checked style="margin-left: 10px;margin-right: 10px;" id="reverb" type="checkbox">Pedals
 				<input title='Dont override midi file program change settings' style="margin-left: 10px;margin-right: 10px;" id="program-change" type="checkbox">No P.Change
 				<input title='Dont play chords in midi song file' style="margin-left: 10px;margin-right: 10px;" id="mute-chords" type="checkbox">Mute Chords
@@ -128,11 +188,11 @@
   <div style="margin-top: 20px;">	
 	<table width="90%">
 	  <tr>	  
-      <td align="left" width="20%"><span style="font-size: 28px" id="orinayo">C</span></td>
-      <td align="left" width="20%"><span style="font-size: 28px" id="orinayo-section">Arr A</span></td>
-      <td align="left" width="20%"><span style="font-size: 28px" id="orinayo-pad">Pad 2</span></td>
-      <td align="left" width="20%"><span style="font-size: 28px" id="orinayo-strum">Strum 1</span></td>
-      <td align="left" width="20%"><span style="font-size: 28px" id="orinayo-reg">Slot 0</span></td>	  
+      <td align="left" width="20%"><span style="font-size: 24px" id="orinayo">C</span></td>
+      <td align="left" width="20%"><span style="font-size: 24px" id="orinayo-section">Arr A</span></td>
+      <td align="left" width="20%"><span style="font-size: 24px" id="orinayo-pad">Pad 2</span></td>
+      <td align="left" width="20%"><span style="font-size: 24px" id="orinayo-strum">Strum 1</span></td>
+      <td align="left" width="20%"><span style="font-size: 24px" id="orinayo-reg">Slot 0</span></td>	  
 	  </tr>
 	  <tr> <td colspan="5"><canvas id="tempoCanvas" width="1150" height="50" style="margin: 0px; display:none"></canvas></td></tr>
 	  </table>	
@@ -157,7 +217,8 @@
 
   <script src="./dist/converse.js"></script>  
   <script src="./assets/pedalboard.js" type="module"></script>   
-  
+
+  <script src="./js/pureknob.js"></script>  
   <script src="./js/basic-pitch.js"></script>    
   <script src="./js/tonal.min.js"></script>    
   <script src="./js/stream-deck.js"></script>  
@@ -180,5 +241,6 @@
   <script src="./js/main.js"></script> 
   
   <audio id="audioPlayer" autoplay style="display: none"> </audio>
+  </div>
 </body>
 </html>

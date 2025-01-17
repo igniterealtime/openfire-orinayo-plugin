@@ -25,6 +25,8 @@ const WHAMMY = 2;
 const LOGO = 12;
 const CONTROL = 100;
 
+var desktopContainer = null;
+var mobileContainer = null;
 var midiInstrCheckedEle = [];
 var midiVolumeEle = [];
 var programChangeEle = null;
@@ -35,9 +37,12 @@ var autoFillCheckedEle = null;
 var introEndCheckedEle = null;
 var guitarIRDef = null;
 var guitarPosition = null;
-let tempoDiv = null;
-let volDiv = null;
-
+var tempoDiv = null;
+var showVol = null;
+var bassKnob = null;
+var chordKnob = null;
+var drumKnob = null;
+var leadKnob = null;
 var vocalistMode = false;
 var muteChords = null;
 var loopWait = 0;
@@ -332,25 +337,29 @@ function handleLiberLive(selected) {
 	bluetooth.style.display = selected ? "" : "none";	
 	let device;
 	
-	if (selected) bluetooth.addEventListener("click", async (evt) => {
-
-		device = await navigator.bluetooth.requestDevice({		
-			filters: [{
-			services: ["000000ff-0000-1000-8000-00805f9b34fb"],
-		}]});
-
-		if (device) {
-			console.debug("found liberlive", device);	
-			
-			if (bluetoothGuitar) {
-				await device.forget();	
-				bluetoothGuitar	= null;
-				console.debug("forget liberlive", device);
-			} else {
-				bluetoothGuitar = device;
-			}
+	if (selected) 
+	{	
+		if (mobileCheck()) {
+			const mobileToolbar = document.getElementById("mobile-toolbar");
+			mobileToolbar.append(bluetooth);			
 		}
-	});
+	
+		bluetooth.addEventListener("click", async (evt) => {
+			device = await navigator.bluetooth.requestDevice({filters: [{services: ["000000ff-0000-1000-8000-00805f9b34fb"]}]});
+
+			if (device) {
+				console.debug("found liberlive", device);	
+				
+				if (bluetoothGuitar) {
+					await device.forget();	
+					bluetoothGuitar	= null;
+					console.debug("forget liberlive", device);
+				} else {
+					bluetoothGuitar = device;
+				}
+			}
+		});
+	}
 }
 
 function handleLavaGenie(selected) {
@@ -358,26 +367,34 @@ function handleLavaGenie(selected) {
 	bluetooth.style.display = selected ? "" : "none";	
 	let device;
 	
-	if (selected) bluetooth.addEventListener("click", async (evt) => {
-		console.debug('handleLavaGenie - click');	
-	
-		device = await navigator.bluetooth.requestDevice({		
-			filters: [{
-			services: ["0000fee0-0000-1000-8000-00805f9b34fb"],		
-		}]});
-
-		if (device) {
-			console.debug("found lavagenie", device);				
-			
-			if (bluetoothGuitar) {			
-				await device.forget();
-				bluetoothGuitar	= null;				
-				console.debug("forget lavagenie", device);				
-			} else {
-				bluetoothGuitar = device;
-			}				
+	if (selected) 
+	{
+		if (mobileCheck()) {
+			const mobileToolbar = document.getElementById("mobile-toolbar");
+			mobileToolbar.append(bluetooth);			
 		}
-	});
+		
+		bluetooth.addEventListener("click", async (evt) => {
+			console.debug('handleLavaGenie - click');	
+		
+			device = await navigator.bluetooth.requestDevice({		
+				filters: [{
+				services: ["0000fee0-0000-1000-8000-00805f9b34fb"],		
+			}]});
+
+			if (device) {
+				console.debug("found lavagenie", device);				
+				
+				if (bluetoothGuitar) {			
+					await device.forget();
+					bluetoothGuitar	= null;				
+					console.debug("forget lavagenie", device);				
+				} else {
+					bluetoothGuitar = device;
+				}				
+			}
+		});
+	}
 }
 
 function handleRecordSong(selected) {
@@ -599,7 +616,8 @@ async function doLavaGenieSetup(device) {
 						resetGuitarHero();
 					}	
 
-					document.getElementById("lavagenie").style.display = "";					
+					document.getElementById("extern-device").innerHTML = "Lava Genie Guitar";
+					document.getElementById("lavagenie").style.display = "";
 					
 					handlers[characteristic.uuid].addEventListener('characteristicvaluechanged', (evt) => {
 						const {buffer}  = evt.target.value;
@@ -1300,8 +1318,18 @@ async function doLiberLiveSetup(device) {
 						setup();
 						resetGuitarHero();
 					}	
+					
+					document.getElementById("liberlive").style.display = "";						
 
-					document.getElementById("liberlive").style.display = "";					
+					if (mobileCheck()) {
+						document.getElementById("extern-device").innerHTML = "LiberLive C1 Guitar";						
+						const controlDevice = document.getElementById("control-device");
+						controlDevice.append(document.getElementById("ll-chord1"));			
+						controlDevice.append(document.getElementById("ll-drums1"));	
+						controlDevice.append(document.getElementById("ll-chord2"));	
+						controlDevice.append(document.getElementById("ll-drums2"));	
+						controlDevice.append(document.getElementById("ll-keysign"));							
+					}				
 					
 					handler.addEventListener('characteristicvaluechanged', (evt) => {
 						const {buffer}  = evt.target.value;
@@ -1314,7 +1342,7 @@ async function doLiberLiveSetup(device) {
 						if (eventData[7]) {
 							//tempo = eventData[7];
 							//tempoDiv.innerHTML = tempo;								
-							volDiv.innerHTML = "Vol: " + Math.trunc(guitarVolume * 100); 							
+							showVol.innerHTML = "Vol: " + Math.trunc(guitarVolume * 100); 							
 						}
 						
 						/*let html = "<table><tr>";
@@ -1742,11 +1770,14 @@ function initLavaGenie() {
 
 async function onloadHandler() {
 	console.debug("onloadHandler");
-	
-	let version = "latest";
+		
+	let version = "1.0.0";
 	if (!!chrome.runtime?.getManifest) version = chrome.runtime.getManifest().version;
 	document.title = "Orin Ayo | " + version;
   
+	desktopContainer = document.getElementById("desktop");
+	mobileContainer = document.getElementById("mobile");
+	
 	playButton = document.querySelector("#play");
 	gamePadModeButton = document.querySelector("#gamepad_mode");
 	styleType = document.querySelector("#style_type");
@@ -1760,11 +1791,103 @@ async function onloadHandler() {
 	
   	keySign = document.getElementById("ll-keysign");	
 	tempoDiv = document.getElementById('showTempo');
-	volDiv = document.getElementById('showVol');	
+	showVol = document.getElementById('showVol');	
 	
 	programChangeEle = document.querySelector("#program-change");
 	autoFillCheckedEle = document.querySelector("#autoFill");
 	introEndCheckedEle = document.querySelector("#introEnd");		
+	loadFile = document.querySelector("#load_file")
+	resetApp = document.querySelector("#reset_app")	
+	bluetoothEle = document.querySelector("#bluetooth")		
+	
+	const saveReg = document.querySelector("#save_reg");
+	const realDrumsLoop = document.getElementById("realdrumLoop");	
+	const realBassLoop = document.getElementById("realbassLoop");		
+	const realChordsLoop = document.getElementById("realchordLoop");		
+	const guitarType = document.getElementById("guitarType");
+	const guitarVolEle = document.querySelector("#volume");	
+	const pedalBoard = document.querySelector("#pedal_board");
+	const board = document.querySelector(".pedalboard");	
+	const mobileBody = document.getElementById("mobile-body-detail"); 
+	const midiInType = document.getElementById("midiInType");	
+		
+	if (mobileCheck()) {
+		desktopContainer.style.display = "none";	
+		
+		mobileContainer.style.display = "";
+		const mobileToolbar = document.getElementById("mobile-toolbar");
+		mobileToolbar.append(playButton);
+		mobileToolbar.append(loadFile);
+		mobileToolbar.append(saveReg);
+		mobileToolbar.append(resetApp);
+
+		const mobileController = document.getElementById("mobile-controller");
+		mobileController.append(midiInType);			
+		
+		//mobileToolbar.append(pedalBoard);
+		//const mobileBodyContainer = document.getElementById("mobile-body");		
+		//mobileBodyContainer.append(board);
+		
+		const chordView = document.getElementById("mobile-chord-view");	
+		chordView.append(document.getElementById("orinayo"));
+		
+		const arrView = document.getElementById("mobile-arr-view");			
+		arrView.append(document.getElementById("orinayo-section"));
+		
+		drumKnob = createKnob("drum-volume", 50, 0, 100, '#88ff88');
+		const drumChoice = document.getElementById("drum-choice");
+		drumChoice.append(realDrumsLoop);
+		
+		drumKnob.addListener((knob, value) => {
+			drumVol = value; 
+			savedDrumVol = drumVol;	
+			if (drumLoop) drumLoop.setVolume(drumVol / 100);			
+		});			
+		
+		bassKnob = createKnob("bass-volume", 50, 0, 100, '#ff8888');
+		const bassChoice = document.getElementById("bass-choice");
+		bassChoice.append(realBassLoop);
+		
+		bassKnob.addListener((knob, value) => {
+			bassVol = value; 
+			savedBassVol = bassVol;	
+			if (bassLoop) bassLoop.setVolume(bassVol / 100);			
+		});			
+		
+		chordKnob = createKnob("chord-volume", 50, 0, 100, '#8888ff');
+		const chordChoice = document.getElementById("chord-choice");
+		chordChoice.append(realChordsLoop);
+		
+		chordKnob.addListener((knob, value) => {
+			chordVol = value; 
+			savedChordVol = chordVol;	
+			if (chordLoop) chordLoop.setVolume(chordVol / 100);			
+		});		
+		
+		leadKnob = createKnob("lead-volume", 50, 0, 100, '#ff88ff');		
+		const leadChoice = document.getElementById("lead-choice");
+		leadChoice.append(guitarType);	
+
+		leadKnob.addListener((knob, value) => {
+			guitarVolume = value / 100; 
+			savedGuitarVolume = guitarVolume;
+			showVol.innerHTML = "Vol: " + Math.trunc(guitarVolume * 100);		
+		});	
+
+		const controlItems = document.getElementById("control-items");	
+		controlItems.append(document.getElementById("guitarStrum1"));
+		controlItems.append(document.getElementById("guitarStrum2"));
+		controlItems.append(document.getElementById("guitarStrum3"));				
+		controlItems.append(document.getElementById("guitarPosition"));
+		controlItems.append(document.getElementById("guitarIRDef"));
+		controlItems.append(document.getElementById("control-fill"));
+		controlItems.append(document.getElementById("control-intro"));		
+
+	} else {
+		mobileContainer.style.display = "none";
+		desktopContainer.style.display = "";			
+	}
+	
 	
 	document.body.addEventListener('click', function(event) 	{
 		// TODO
@@ -1841,10 +1964,9 @@ async function onloadHandler() {
 	lyricsCanvas = document.querySelector("#lyrics");
 	lyricsContext = lyricsCanvas.getContext('2d');	
 	
-	const board = document.querySelector(".pedalboard");
+	const settings = document.querySelector("#settings");	
 	const chordpro = document.querySelector("#chordpro");
 	const chatview = document.querySelector("#chatview");	
-	const settings = document.querySelector("#settings");
 	const gameCanvas = document.querySelector("#gameCanvas");
 	const toggleChat = document.querySelector("#toggle_chat");
 	
@@ -1856,18 +1978,18 @@ async function onloadHandler() {
 			
 		if (settings.style.display == "none") {
 			settings.style.display = "";
+			mobileBody.style.display = "";
 			//gameCanvas.style.display = "";
 			chatview.style.display = "none";
 	
 			
 		} else {
 			chatview.style.display = "";
-			settings.style.display = "none";	
+			settings.style.display = "none";
+			mobileBody.style.display = "none";
 			//gameCanvas.style.display = "none";			
 		}
 	});
-	
-	const pedalBoard = document.querySelector("#pedal_board");
 	
 	pedalBoard.addEventListener('click', function(event) {	
 		chatview.style.display = "none";		
@@ -1877,12 +1999,14 @@ async function onloadHandler() {
 			
 		if (settings.style.display == "none") {
 			settings.style.display = "";
+			mobileBody.style.display = "";			
 			board.style.display = "none";
 	
 			
 		} else if (guitarReverb?.checked) {
 			board.style.display = "";
-			settings.style.display = "none";			
+			settings.style.display = "none";	
+			mobileBody.style.display = "none";
 		}
 	});	
 	
@@ -1896,11 +2020,13 @@ async function onloadHandler() {
 		
 		if (settings.style.display == "none") {
 			settings.style.display = "";
+			mobileBody.style.display = "";			
 			chordpro.style.display = "none";		
 			
 		} else {
 			chordpro.style.display = "";
-			settings.style.display = "none";			
+			settings.style.display = "none";	
+			mobileBody.style.display = "none";			
 		}
 	});	
 	
@@ -1916,11 +2042,13 @@ async function onloadHandler() {
 		
 		if (settings.style.display == "none") {
 			settings.style.display = "";
+			mobileBody.style.display = "";			
 			lyricsCanvas.style.display = "none";	
 			
 		} else {
 			lyricsCanvas.style.display = "";
-			settings.style.display = "none";			
+			settings.style.display = "none";	
+			mobileBody.style.display = "none";
 		}
 	});		
 	
@@ -1930,8 +2058,6 @@ async function onloadHandler() {
 	chordaBluetooth.addEventListener('click', function(event) {
 		onChordaConnect(event);
 	});		
-
-	const saveReg = document.querySelector("#save_reg")
 		
 	saveReg.addEventListener('click', function(event) {
 		const slot = prompt("Enter save slot number");
@@ -1940,15 +2066,11 @@ async function onloadHandler() {
 			saveRegistration(slot);
 		}
 	});
-	
-	resetApp = document.querySelector("#reset_app")
-		
+			
 	resetApp.addEventListener('click', function(event) {
 		registration = 0;
 		location.reload();
 	});	
-	
-	loadFile = document.querySelector("#load_file")
 		
 	loadFile.addEventListener('click', function(event) {
 		upload.click();	
@@ -1976,13 +2098,14 @@ async function onloadHandler() {
 		}
 	});	
 
-	const showVol = document.querySelector("#showVol");
 	showVol.innerHTML = "Vol: " + Math.trunc(guitarVolume * 100);
 	
-	document.querySelector("#volume").addEventListener("input", function(event) {
+	guitarVolEle.addEventListener("input", function(event) {
 		guitarVolume = +event.target.value / 100; 
 		savedGuitarVolume = guitarVolume;
-		showVol.innerHTML = "Vol: " + Math.trunc(guitarVolume * 100);
+		const displayVol =  Math.trunc(guitarVolume * 100);
+		showVol.innerHTML = "Vol: " + displayVol;
+		if (leadKnob) leadKnob.setValue(displayVol);
 	});
 	
 	document.querySelector("#tempo").addEventListener("input", function(event) {
@@ -2329,7 +2452,7 @@ async function handleChordPro(file, data) {
 	
 	let url = location.origin + "/orinayo/cp2midi";
 	
-	if (location.origin.startWith("chrome-extension") || location.origin.startWith("https://jus-be.github.io/")) {
+	if (location.origin.startsWith("chrome-extension") || location.origin.startsWith("https://jus-be.github.io/")) {
 		url = "https://pade.chat:5443/orinayo/cp2midi";
 	}
 	
@@ -4810,6 +4933,17 @@ function setupMidiChannels() {
 	bassCheckedEle = document.getElementById("arr-instrument-17");
 	chordCheckedEle = document.getElementById("arr-instrument-18");
 	
+	if (mobileCheck()) {
+		const chordMute = document.getElementById("chord-mute");
+		chordMute.append(chordCheckedEle);
+		
+		const drumMute = document.getElementById("drum-mute");
+		drumMute.append(drumCheckedEle);
+
+		const bassMute = document.getElementById("bass-mute");
+		bassMute.append(bassCheckedEle);		
+	}
+	
 	drumCheckedEle.addEventListener("click", function(event) {
 		pressFootSwitch(7);
 	});
@@ -4843,21 +4977,29 @@ function setupMidiChannels() {
 		keysSound2Vol = +event.target.value; 			
 	});
 	
+	if (drumKnob) drumKnob.setValue(midiVolumeEle[16].value);
+	if (chordKnob) chordKnob.setValue(midiVolumeEle[18].value);
+	if (bassKnob) bassKnob.setValue(midiVolumeEle[17].value);	
+	if (leadKnob) leadKnob.setValue(Math.trunc(guitarVolume * 100));	
+	
 	midiVolumeEle[16].addEventListener("input", function(event) {
 		drumVol = +event.target.value; 
-		savedDrumVol = drumVol;			
+		savedDrumVol = drumVol;	
+		if (drumKnob) drumKnob.setValue(drumVol);
 		if (drumLoop) drumLoop.setVolume(drumVol / 100);			
 	});
 
 	midiVolumeEle[17].addEventListener("input", function(event) {
 		bassVol = +event.target.value; 
 		savedBassVol = bassVol;	
+		if (bassKnob) bassKnob.setValue(drumVol);		
 		if (bassLoop) bassLoop.setVolume(bassVol / 100);			
 	});
 	
 	midiVolumeEle[18].addEventListener("input", function(event) {
 		chordVol = +event.target.value; 
-		savedChordVol = chordVol;			
+		savedChordVol = chordVol;	
+		if (chordKnob) chordKnob.setValue(drumVol);		
 		if (chordLoop) chordLoop.setVolume(chordVol / 100);			
 	});	
 	
@@ -5010,7 +5152,7 @@ function saveConfig() {
 	config.reverb = guitarReverb.checked;
 	config.microphone = microphone.checked;
 	config.programChange = programChangeEle.checked;
-	config.strumPos = guitarPosition.selectedIndex;
+	config.strumPos = guitarPosition?.selectedIndex;
 	config.liberLiveChrd1 = liberLive.chord1;
 	config.liberLiveChrd2 = liberLive.chord2;
 	config.liberLiveDrms1 = liberLive.drums1;
@@ -6579,10 +6721,11 @@ function doChord() {
 
 function startStopWebAudio() {
 	let gapTime = 0.5;
+	const stillPlaying = drumLoop?.looping || bassLoop?.looping || chordLoop?.looping;
+
+	console.debug("startStopWebAudio", styleStarted, stillPlaying, pad.buttons[YELLOW]);
 	
-	console.debug("startStopWebAudio", styleStarted, pad.buttons[YELLOW]);
-	
-	if (!styleStarted) {
+	if (!styleStarted) {		
 		if (recordMode) startRecording();				
 		if (!registration || registration == 0) setTempo(realInstrument.bpm);	
 		const goTime = audioContext.currentTime + gapTime;				
@@ -7721,7 +7864,9 @@ function scheduleArrNote() {
 		const secondsPerBeat = 60.0 / tempo; 
 		const beatTime = (0.25 * secondsPerBeat); 		
 		const goTime = audioContext.currentTime + beatTime;
-			
+		
+		// TODO SFF plus WebAudio
+		/*
 		if (drumLoop && !drumLoop.looping && drumCheckedEle?.checked) {
 			drumLoop.start("arra", goTime);
 		}	
@@ -7733,7 +7878,8 @@ function scheduleArrNote() {
 		if (chordLoop && !chordLoop.looping && chordCheckedEle?.checked) {
 			chordLoop.start("key" + (keyChange % 12), goTime);
 		}		
-				
+		*/
+		
 		// TODO implement CASM
 		const channel = getCasmChannel(currentSffVar, event.channel); 
 
@@ -8265,6 +8411,26 @@ function arraysEqual(a, b) {
   return true;
 }
 
+function mobileCheck() {
+  let check = false;
+  (function(a){if(/(android|bb\d+|meego).+mobile|avantgo|bada\/|blackberry|blazer|compal|elaine|fennec|hiptop|iemobile|ip(hone|od)|iris|kindle|lge |maemo|midp|mmp|mobile.+firefox|netfront|opera m(ob|in)i|palm( os)?|phone|p(ixi|re)\/|plucker|pocket|psp|series(4|6)0|symbian|treo|up\.(browser|link)|vodafone|wap|windows ce|xda|xiino/i.test(a)||/1207|6310|6590|3gso|4thp|50[1-6]i|770s|802s|a wa|abac|ac(er|oo|s\-)|ai(ko|rn)|al(av|ca|co)|amoi|an(ex|ny|yw)|aptu|ar(ch|go)|as(te|us)|attw|au(di|\-m|r |s )|avan|be(ck|ll|nq)|bi(lb|rd)|bl(ac|az)|br(e|v)w|bumb|bw\-(n|u)|c55\/|capi|ccwa|cdm\-|cell|chtm|cldc|cmd\-|co(mp|nd)|craw|da(it|ll|ng)|dbte|dc\-s|devi|dica|dmob|do(c|p)o|ds(12|\-d)|el(49|ai)|em(l2|ul)|er(ic|k0)|esl8|ez([4-7]0|os|wa|ze)|fetc|fly(\-|_)|g1 u|g560|gene|gf\-5|g\-mo|go(\.w|od)|gr(ad|un)|haie|hcit|hd\-(m|p|t)|hei\-|hi(pt|ta)|hp( i|ip)|hs\-c|ht(c(\-| |_|a|g|p|s|t)|tp)|hu(aw|tc)|i\-(20|go|ma)|i230|iac( |\-|\/)|ibro|idea|ig01|ikom|im1k|inno|ipaq|iris|ja(t|v)a|jbro|jemu|jigs|kddi|keji|kgt( |\/)|klon|kpt |kwc\-|kyo(c|k)|le(no|xi)|lg( g|\/(k|l|u)|50|54|\-[a-w])|libw|lynx|m1\-w|m3ga|m50\/|ma(te|ui|xo)|mc(01|21|ca)|m\-cr|me(rc|ri)|mi(o8|oa|ts)|mmef|mo(01|02|bi|de|do|t(\-| |o|v)|zz)|mt(50|p1|v )|mwbp|mywa|n10[0-2]|n20[2-3]|n30(0|2)|n50(0|2|5)|n7(0(0|1)|10)|ne((c|m)\-|on|tf|wf|wg|wt)|nok(6|i)|nzph|o2im|op(ti|wv)|oran|owg1|p800|pan(a|d|t)|pdxg|pg(13|\-([1-8]|c))|phil|pire|pl(ay|uc)|pn\-2|po(ck|rt|se)|prox|psio|pt\-g|qa\-a|qc(07|12|21|32|60|\-[2-7]|i\-)|qtek|r380|r600|raks|rim9|ro(ve|zo)|s55\/|sa(ge|ma|mm|ms|ny|va)|sc(01|h\-|oo|p\-)|sdk\/|se(c(\-|0|1)|47|mc|nd|ri)|sgh\-|shar|sie(\-|m)|sk\-0|sl(45|id)|sm(al|ar|b3|it|t5)|so(ft|ny)|sp(01|h\-|v\-|v )|sy(01|mb)|t2(18|50)|t6(00|10|18)|ta(gt|lk)|tcl\-|tdg\-|tel(i|m)|tim\-|t\-mo|to(pl|sh)|ts(70|m\-|m3|m5)|tx\-9|up(\.b|g1|si)|utst|v400|v750|veri|vi(rg|te)|vk(40|5[0-3]|\-v)|vm40|voda|vulc|vx(52|53|60|61|70|80|81|83|85|98)|w3c(\-| )|webc|whit|wi(g |nc|nw)|wmlb|wonu|x700|yas\-|your|zeto|zte\-/i.test(a.substr(0,4))) check = true;})(navigator.userAgent||navigator.vendor||window.opera);
+  return check;
+};
+
+function createKnob(id, value, valMin, valMax, color) {
+	const knob = pureknob.createKnob(200, 200);
+
+	knob.setProperty('angleStart', -0.75 * Math.PI);
+	knob.setProperty('angleEnd', 0.75 * Math.PI);
+	knob.setProperty('colorFG', color);
+	knob.setProperty('trackWidth', 0.4);
+	knob.setProperty('valMin', valMin);
+	knob.setProperty('valMax', valMax);
+
+	knob.setValue(value);
+	document.getElementById(id).appendChild(knob.node());	
+	return knob;
+}
 // -------------------------------------------------------
 //
 //  X-Touch MIDI Controller Device
