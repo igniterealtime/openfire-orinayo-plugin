@@ -1,0 +1,1 @@
+import{_ as e,o as a,c}from"./index-BuBZjzSj.js";const o={},r={class:"loader","aria-label":"Loading..."};function s(t,_){return a(),c("div",r)}const d=e(o,[["render",s],["__scopeId","data-v-996e47c4"]]);export{d as default};

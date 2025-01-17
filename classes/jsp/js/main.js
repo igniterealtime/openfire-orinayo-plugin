@@ -33,7 +33,7 @@ var bassCheckedEle = null;
 var chordCheckedEle = null;
 var autoFillCheckedEle = null;
 var introEndCheckedEle = null;
-var effectsPreset = null;
+var guitarIRDef = null;
 var guitarPosition = null;
 let tempoDiv = null;
 let volDiv = null;
@@ -122,6 +122,7 @@ var orinayo_reg = null;
 var base = BASE;
 var key = "C"
 var keyChange = 0;
+var keySign = null;
 var padsMode = 0;
 var savedPadsMode = 0;
 var sectionChange = 0;
@@ -166,6 +167,7 @@ var timerWorker = null;     		// The Web Worker used to fire timer messages
 var strum1 = "3-2-1-2";
 var strum2 = "[3+2+1]";
 var strum3 = "3-2-4-1-4-2-4";
+var guitarIR = "Conic Long Echo Hall";
 var guitarName = "none";
 var player = new WebAudioFontPlayer();
 var midiGuitar = null;
@@ -579,6 +581,7 @@ async function doLavaGenieSetup(device) {
 					
 				if (characteristic.properties.writeWithoutResponse) {
 					writeCharacteristic = characteristic;	
+					// TODO
 					//setTimeout(setLiberLiveChordMappings);
 					setTimeout(setLavaGenieSettings, 1000);
 				}
@@ -858,7 +861,9 @@ function writeGenie(bytes) {
 
 async function setLiberLiveChordMappings() {
 	const hdr = packString("b11e");
-	console.debug("setLiberLiveChordMappings", hdr, writeCharacteristic);	
+	const offset = parseInt(keySign.value);	
+	console.debug("setLiberLiveChordMappings", offset, hdr, writeCharacteristic);
+	if (!writeCharacteristic) return;
 	
 	const keys = [
 		{level: 10, type: 5},	// Bbadd9	
@@ -897,7 +902,11 @@ async function setLiberLiveChordMappings() {
 	let i = 0;
 	
 	for (let key of keys) {
-		dataView[5+i] = packString(parseChar(key.level) + parseChar(key.type));
+		let keyVal = offset + key.level;
+		if (keyVal > 11) keyVal = 0;
+		if (keyVal < 0) keyVal = 11;
+		
+		dataView[5+i] = packString(parseChar(keyVal) + parseChar(key.type));
 		i++;
 	}
 	
@@ -1303,9 +1312,9 @@ async function doLiberLiveSetup(device) {
 						}
 						
 						if (eventData[7]) {
-							tempo = eventData[7];
-							volDiv.innerHTML = "Vol: " + Math.trunc(guitarVolume * 100); 
-							tempoDiv.innerHTML = tempo;								
+							//tempo = eventData[7];
+							//tempoDiv.innerHTML = tempo;								
+							volDiv.innerHTML = "Vol: " + Math.trunc(guitarVolume * 100); 							
 						}
 						
 						/*let html = "<table><tr>";
@@ -1323,17 +1332,27 @@ async function doLiberLiveSetup(device) {
 						html += "</tr></table>"
 						ui.innerHTML = html;*/				
 						
-						const oldKey = keyChange;
-						
-						if (eventData[1] == 0) keyChange = 0;	// C
-						if (eventData[1] == 1) keyChange = 2;	// D
-						if (eventData[1] == 2) keyChange = 4;	// E
-						if (eventData[1] == 3) keyChange = 5;	// F
-						if (eventData[1] == 4) keyChange = 7;	// G
-						if (eventData[1] == 5) keyChange = 9;	// A
-						if (eventData[1] == 6) keyChange = 11;	// B
-						
-						if (oldKey != keyChange) dokeyChange();
+						if ( eventData[5] == 0) {	// paddle is neutral
+							const oldKey = keyChange;
+							const offset = parseInt(keySign.value);
+							
+							if (eventData[1] == 0) keyChange = 0;	// C
+							if (eventData[1] == 1) keyChange = 2;	// D
+							if (eventData[1] == 2) keyChange = 4;	// E
+							if (eventData[1] == 3) keyChange = 5;	// F
+							if (eventData[1] == 4) keyChange = 7;	// G
+							if (eventData[1] == 5) keyChange = 9;	// A
+							if (eventData[1] == 6) keyChange = 11;	// B
+							
+							keyChange = keyChange + offset;
+							if (keyChange < 0) keyChage = 11;
+							if (keyChange > 11) keyChage = 0;
+							
+							if (oldKey != keyChange) {
+								dokeyChange();
+								setLiberLiveChordMappings();
+							}
+						}
 						
 						let chordSelected = false;
 						let paddleMoved = false;
@@ -1599,7 +1618,7 @@ async function doLiberLiveSetup(device) {
 						}
 						else
 	
-						if (eventData[1] >= 16 && !styleStarted) {			// Tempo Pad
+						if (eventData[1] >= 16 && !styleStarted && eventData[5] == 0) {			// Tempo Pad on no paddle movement
 							if (eventData[4] == 2) recallRegistration(1);	
 							if (eventData[4] == 4) recallRegistration(2);		
 							if (eventData[4] == 8) recallRegistration(3);	
@@ -1607,7 +1626,7 @@ async function doLiberLiveSetup(device) {
 							if (eventData[4] == 32) recallRegistration(5);								
 							if (eventData[4] == 64) recallRegistration(6);	
 							if (eventData[4] == 128) recallRegistration(7);	
-						}						
+						}					
 							
 						if (paddleMoved && !haveFired) {						
 							haveFired = true;
@@ -1739,6 +1758,7 @@ async function onloadHandler() {
 	orinayo_reg = document.querySelector('#orinayo-reg');	
 	guitarReverb = document.querySelector("#reverb");
 	
+  	keySign = document.getElementById("ll-keysign");	
 	tempoDiv = document.getElementById('showTempo');
 	volDiv = document.getElementById('showVol');	
 	
@@ -3024,7 +3044,7 @@ function resetGuitarHero() {
 function connectHandler(e) {
   console.debug("connectHandler " + e.gamepad.id, e.gamepad);	
   
-  if (e.gamepad.id.indexOf("Guitar") > -1 || (e.gamepad.id.indexOf("248a") > -1 && e.gamepad.id.indexOf("8266") > -1) || e.gamepad.id == "Xbox 360 Controller for Windows (STANDARD GAMEPAD)") {
+  if (e.gamepad.id.indexOf("Guitar") > -1 || (e.gamepad.id.indexOf("248a") > -1 && e.gamepad.id.indexOf("8266") > -1) || e.gamepad.id == "Xbox 360 Controller for Windows (STANDARD GAMEPAD)" || e.gamepad.id == "DS4 Wired Controller (Vendor: 7545 Product: 1073)") {
 	console.debug("connectHandler found gamepad " + e.gamepad.id, e.gamepad);
 	
 	inputDeviceType = "games-controller";
@@ -3052,15 +3072,22 @@ function updateStatus() {
 	var ring = null
 	var riffMasterXbox = null;
 	var riffMasterPS = null;
+	var ds4WiredController = null;	
 	
 	var gamepads = navigator.getGamepads();	
 	  
 	for (var i = 0; i < gamepads.length; i++) {
 		//console.debug("found gamepad " + gamepads[i].id, gamepads[i]);
 
-			
 		if (gamepads[i] && gamepads[i].id.indexOf("PDP RiffMaster Guitar") > -1) {
 		  riffMasterPS = gamepads[i];
+		  guitarAvailable = true;
+		  break;
+		}
+		else
+			
+		if (gamepads[i] && gamepads[i].id.indexOf("DS4 Wired Controller (Vendor: 7545 Product: 1073)") > -1) {
+		  ds4WiredController = gamepads[i];
 		  guitarAvailable = true;
 		  break;
 		}
@@ -3110,6 +3137,81 @@ function updateStatus() {
 		}
 
 	}
+	else	
+		
+	if (ds4WiredController) {
+		//console.debug("using ds4 controller" + ds4WiredController.id, ds4WiredController);
+		
+		for (var i=0; i<ds4WiredController.buttons.length; i++) 
+		{
+			var val = ds4WiredController.buttons[i];
+			var touched = false;							
+		  
+			if (typeof(val) == "object") 
+			{	  			
+				if ('touched' in val) {
+				  touched = val.touched;
+				}			
+			}
+
+			let j = i;
+			if (i == BLUE) j = YELLOW;
+			if (i == YELLOW) j = BLUE;	
+			//if (i == 11) j = LOGO;
+			//if (i == LOGO) j = 11;
+			
+			if (pad.buttons[j] != touched) {
+				console.debug("button " + i, j, touched);									
+				pad.buttons[j] = touched;
+				updated = true;
+			}
+			
+			
+			if (i == 10) {
+				pad.axis[TOUCH] = 0;
+				
+				if (pad.buttons[10]) {
+					if (pad.buttons[GREEN]) pad.axis[TOUCH] = -0.7;	
+					if (pad.buttons[RED]) pad.axis[TOUCH] = -0.4; 	
+					if (pad.buttons[YELLOW]) pad.axis[TOUCH] = 0.2;	
+					if (pad.buttons[BLUE]) pad.axis[TOUCH] = 0.4; 				
+					if (pad.buttons[ORANGE]) pad.axis[TOUCH] = 1.0; 
+					
+					pad.buttons[GREEN] = false;
+					pad.buttons[RED] = false;
+					pad.buttons[YELLOW] = false;
+					pad.buttons[BLUE] = false;
+					pad.buttons[ORANGE] = false;					
+				}					
+			}			
+		}
+		
+		if (ds4WiredController.axes.length > STRUM) 
+		{			
+			if (pad.axis[STRUM] != ds4WiredController.axes[STRUM].toFixed(4)) {
+				//console.debug("strum", ds4WiredController.axes[STRUM].toFixed(4));							
+				pad.axis[STRUM] = ds4WiredController.axes[STRUM].toFixed(4);
+				updated = true;
+			}
+
+			if (pad.axis[JSTICKX] != ds4WiredController.axes[JSTICKX].toFixed(1)) {
+				console.debug("joy stick X", ds4WiredController.axes[JSTICKX].toFixed(1));							
+				pad.axis[JSTICKX] = ds4WiredController.axes[JSTICKX].toFixed(1);
+				
+				if (pad.axis[JSTICKX] == 1.0) {
+					pad.buttons[LOGO] = true;
+					updated = true;				
+				}
+			}	
+
+			if (pad.axis[JSTICKY] != ds4WiredController.axes[JSTICKY].toFixed(1)) {
+				console.debug("joy stick Y", ds4WiredController.axes[JSTICKY].toFixed(1));							
+				pad.axis[JSTICKY] = ds4WiredController.axes[JSTICKY].toFixed(1);
+				updated = true;				
+			}			
+		}		
+
+	}		
 	else	
 		
 	if (riffMasterXbox) {
@@ -3394,7 +3496,7 @@ function normaliseSffStyle() {
 		}	
 				
 		const bpm = Math.floor(60 /(arrSequence.data.Hdr.setTempo.microsecondsPerBeat / 1000000))
-		if (!registration) setTempo(bpm);	
+		if (!registration || registration == 0) setTempo(bpm);	
 		
 		const initHdr = arrSequence.data["SFF1"] || arrSequence.data["SFF2"];
 		
@@ -3721,9 +3823,43 @@ async function setupUI(config,err) {
 	strum2 = config.strum2 || strum2;
 	strum3 = config.strum3 || strum3;
 	
-	effectsPreset =  document.getElementById("effectsPreset");
+	guitarIR = config.guitarIR || guitarIR;
+
+	guitarIRDef =  document.getElementById("guitarIRDef");
+	guitarIRDef.options[0] = new Option("Conic Long Echo Hall", "Conic Long Echo Hall", config.guitarIR == "Conic Long Echo Hall", config.guitarIR == "Conic Long Echo Hall");	
+	guitarIRDef.options[1] = new Option("hall", "hall", config.guitarIR == "hall", config.guitarIR == "hall");	
+	guitarIRDef.options[2] = new Option("pcm 90 clean plate", "pcm 90 clean plate", config.guitarIR == "pcm 90 clean plate", config.guitarIR == "pcm 90 clean plate");	
+	guitarIRDef.options[3] = new Option("plate", "plate", config.guitarIR == "plate", config.guitarIR == "plate");	
+	guitarIRDef.options[4] = new Option("room", "room", config.guitarIR == "room", config.guitarIR == "room");	
+	guitarIRDef.options[5] = new Option("space", "space", config.guitarIR == "space", config.guitarIR == "space");	
+	guitarIRDef.options[6] = new Option("spring", "spring", config.guitarIR == "spring", config.guitarIR == "spring");	
+	guitarIRDef.options[7] = new Option("captain 1960", "captain 1960", config.guitarIR == "captain 1960", config.guitarIR == "captain 1960");
+	guitarIRDef.options[8] = new Option("AK SPKRS Vintage US", "AK SPKRS Vintage US", config.guitarIR == "AK SPKRS Vintage US", config.guitarIR == "AK SPKRS Vintage US");
+	guitarIRDef.options[9] = new Option("AKIR Dual Springer", "AKIR Dual Springer", config.guitarIR == "AKIR Dual Springer", config.guitarIR == "AKIR Dual Springer");
+	guitarIRDef.options[10] = new Option("1st baptist nashville balcony", "1st baptist nashville balcony", config.guitarIR == "1st baptist nashville balcony", config.guitarIR == "1st baptist nashville balcony");
+	guitarIRDef.options[11] = new Option("1st baptist nashville far close", "1st baptist nashville far close", config.guitarIR == "1st baptist nashville far close", config.guitarIR == "1st baptist nashville far close");
+	guitarIRDef.options[12] = new Option("1st baptist nashville fa _wide", "1st baptist nashville far wide", config.guitarIR == "1st baptist nashville far wide", config.guitarIR == "1st baptist nashville far wide");
+
+	guitarIRDef.addEventListener("change", function() {
+		guitarIR = guitarIRDef.value;
+		console.debug("selected guitar IR", guitarIR, guitarIRDef.value);	
+
+		fetch("./audio/ir/" + guitarIR + ".wav")
+		.then(response => response.arrayBuffer())
+		.then(data => {
+		  return ctx.decodeAudioData(data, b => {
+			console.debug("pedalboard IR loader", guitarIR, b);
+			window.buffer = b;
+			window.convolver.buffer = b;
+			saveConfig();			
+		  });
+		})
+		.catch(e => onError('Failed to load reverb impulse'));
+	});
+	
+	
 	guitarPosition = document.getElementById("guitarPosition");
-	guitarPosition.selectedIndex = config.strumPos
+	guitarPosition.selectedIndex = config.strumPos	
 	
 	guitarStrum[1].addEventListener("change", function()
 	{
@@ -3762,7 +3898,7 @@ async function setupUI(config,err) {
 		guitarStrum[2].style.display = "none";		
 		guitarStrum[3].style.display = "none";	
 		guitarPosition.style.display = "none";
-		effectsPreset.style.display = "none";
+		guitarIRDef.style.display = "none";
 		
 		guitarName = guitarType.value;
 		
@@ -3771,7 +3907,7 @@ async function setupUI(config,err) {
 			guitarStrum[2].style.display = "";		
 			guitarStrum[3].style.display = "";	
 			guitarPosition.style.display = "";	
-			effectsPreset.style.display = "";
+			guitarIRDef.style.display = "";
 				
 			if (guitarReverb.checked) {		
 
@@ -3792,7 +3928,7 @@ async function setupUI(config,err) {
 	if (guitarName == "none") {
 		for (let i=1; i<4; i++) guitarStrum[i].style.display = "none";
 		guitarPosition.style.display = "none";	
-		effectsPreset.style.display = "none";
+		guitarIRDef.style.display = "none";
 	}		
 	
 	if (guitarName != "none") 
@@ -4845,6 +4981,7 @@ function saveConfig() {
 	config.tempo = tempo;
 	config.guitarVolume = savedGuitarVolume;
 	config.guitarName = guitarName;
+	config.guitarIR = guitarIR;
 	config.strum1 = strum1;
 	config.strum2 = strum2;	
 	config.strum3 = strum3;	
@@ -6167,8 +6304,7 @@ function dokeyDown() {
 
 function dokeyChange() {
     keyChange = (keyChange % 12);
-
-    console.debug("Received 'key change (" + KEYS[keyChange] + ")");
+    console.debug("Received 'key change (" + KEYS[keyChange] + ")", keySign.value);
 
     orinayo.innerHTML = KEYS[keyChange];
     key = KEYS[keyChange];
@@ -6448,7 +6584,7 @@ function startStopWebAudio() {
 	
 	if (!styleStarted) {
 		if (recordMode) startRecording();				
-		if (!registration) setTempo(realInstrument.bpm);	
+		if (!registration || registration == 0) setTempo(realInstrument.bpm);	
 		const goTime = audioContext.currentTime + gapTime;				
 
 		if (songSequence) {
@@ -7750,17 +7886,17 @@ function setupSongSequence() {
 		playButton.innerText = "Wait..";
 		playButton.style.setProperty("--accent-fill-rest", "red");
 		const bpm = Math.floor(60 /(songSequence.data.Hdr.setTempo.microsecondsPerBeat / 1000000))
-		if (!registration) setTempo(bpm);	
+		if (!registration || registration == 0) setTempo(bpm);	
 	} 
 	else
 		
 	if (arrSequence?.data?.Hdr) {
 		
 		if (realInstrument) {
-			if (!registration) setTempo(realInstrument.bpm);	
+			if (!registration || registration == 0) setTempo(realInstrument.bpm);	
 		} else {
 			const bpm = Math.floor(60 /(arrSequence.data.Hdr.setTempo.microsecondsPerBeat / 1000000))
-			if (!registration) setTempo(bpm);			
+			if (!registration || registration == 0) setTempo(bpm);			
 		}
 
 		if (arrSequence.data[currentSffVar]?.length) {
@@ -8000,7 +8136,9 @@ function setupRealInstruments() {
 		chordLoop.addUri(realInstrument.chords, realdrumDevice, realInstrument.bpm);	
 	}
 	
-	if (!registration && realInstrument.bpm) setTempo(realInstrument.bpm);	
+	if ((!registration || registration == 0) && realInstrument.bpm && tempo != realInstrument.bpm) {
+		setTempo(realInstrument.bpm);	
+	}
 	
 	setTimeout(() => {
 		playButton.innerText = "Play";

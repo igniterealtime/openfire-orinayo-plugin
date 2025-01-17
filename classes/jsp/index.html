@@ -58,7 +58,7 @@
 	<div style="display: none;" class="pedalboard">
 	</fluent-tabs>		
 	</div>	
-	<iframe src="https://jus-be.github.io/chordpro-pdf-online/" style="display: none;" id="chordpro"></iframe>	
+	<iframe src="https://pade.chat:5443/orinayo/chordpro-pdf-online/" style="display: none;" id="chordpro"></iframe>	
 	<div style="display: none;" id="chatview" class="converse-container">
 		<converse-root></converse-root>	
 	</div>		
@@ -70,7 +70,7 @@
 	    <td><select  title='Strum type for Pad 4'id="guitarStrum2" type="text" class="form-control input"></select></td>
 	    <td><select title='Strum type for Pad 5' id="guitarStrum3" type="text" class="form-control input"></select></td>
 	    <td><select title='Neck Position' id="guitarPosition" type="text" class="form-control input"><option value=1>I</option><option selected value=2>II</option><option value=3>III&nbsp;</option></select></td>		
-	    <td><select title='Guitar Effects Preset' id="effectsPreset" type="text" class="form-control input"><option selected value='default'>Default</option></select></td>				
+	    <td><select title='Guitar Impulse Response Definitions' id="guitarIRDef" type="text" class="form-control input"></select></td>				
 	</tr>	
 	<tr><td><b>Arranger Type</b></td><td><select id="arrangerType" type="text" class="form-control input"></select></td><td valign="top" rowspan="13" colspan="5"><div id="synth"></div></td></tr>	
 	<tr><td><b>Arranger Group</b></td><td><select id="arrangerGroup" type="text" class="form-control input"></select></td><td></td></tr>	
@@ -90,7 +90,7 @@
 	<tr>
 		<td><b>ChordTracker</b></td>
 		<td><select id="midiChordTrackerSel" type="text" class="form-control input"></select></td>
-		<td valign="top" rowspan="2" colspan="4">
+		<td valign="top" rowspan="2" colspan="5">
 			<div id="liberlive" style="display:none;">
 				<div><center><b>Liber Live Style</b></center></div>
 				<table width="100%">
@@ -99,12 +99,20 @@
 						<td>Paddle A Drums</td>
 						<td>Paddle B Chord</td>
 						<td>Paddle B Drums</td>					
+						<td>Key Sign</td>							
 					</tr>
 					<tr>				
 						<td><select id="ll-chord1" type="text" class="form-control input"></select></td>	
 						<td><select id="ll-drums1" type="text" class="form-control input"></select></td>
 						<td><select id="ll-chord2" type="text" class="form-control input"></select></td>
 						<td><select id="ll-drums2" type="text" class="form-control input"></select></td>					
+						<td>
+							<select id="ll-keysign" type="text" class="form-control input">
+								<option selected value=0>Normal</option>
+								<option value=-1>Flat</option>
+								<option value=1>Sharp</option>
+							</select>
+						</td>							
 					</tr>
 				</table>
 			</div>
@@ -147,9 +155,9 @@
   <script src='./js/0341_Aspirin_sf2_file.js'></script>  
   <script src='./js/0260_JCLive_sf2_file.js'></script>
 
-  <script src="./dist/converse.js"></script>
-	
+  <script src="./dist/converse.js"></script>  
   <script src="./assets/pedalboard.js" type="module"></script>   
+  
   <script src="./js/basic-pitch.js"></script>    
   <script src="./js/tonal.min.js"></script>    
   <script src="./js/stream-deck.js"></script>  
@@ -170,6 +178,7 @@
   <script src="./js/midi.ble.js"></script>	
   <script src="./js/midi-creator.js"></script>	
   <script src="./js/main.js"></script> 
+  
   <audio id="audioPlayer" autoplay style="display: none"> </audio>
 </body>
 </html>
