@@ -1139,7 +1139,7 @@ function startXMPP() {
 	let http = location.origin;		
     let domain = location.hostname;
 	
-	if (location.hostname == "oeplgfliognafobghehfffbppakffdkc") {
+	if (location.hostname == "oileglflkhgmeabhodafmhahdbfbekdh") {
 		ws = "ws://localhost:7070";
 		http = "http://localhost:7070";			
 		domain = "localhost";
@@ -1770,6 +1770,11 @@ function initLavaGenie() {
 
 async function onloadHandler() {
 	console.debug("onloadHandler");
+	
+    navigator.serviceWorker
+      .register("./js/main-sw.js")
+      .then(res => console.log("service worker registered"))
+      .catch(err => console.log("service worker not registered", err));	
 		
 	let version = "1.0.0";
 	if (!!chrome.runtime?.getManifest) version = chrome.runtime.getManifest().version;
@@ -8726,7 +8731,7 @@ function hideChat(ev) {
 
     let domain = location.hostname;
 	
-	if (location.hostname == "oeplgfliognafobghehfffbppakffdkc") {		
+	if (location.hostname == "oileglflkhgmeabhodafmhahdbfbekdh") {		
 		domain = "localhost";
 	}	
 	_converse.api.rooms.open('lobby@conference.' + domain, {'bring_to_foreground': true}, true);	
