@@ -1969,11 +1969,17 @@ async function onloadHandler() {
 	lyricsCanvas = document.querySelector("#lyrics");
 	lyricsContext = lyricsCanvas.getContext('2d');	
 	
-	const settings = document.querySelector("#settings");	
 	const chordpro = document.querySelector("#chordpro");
+	chordpro.src = "https://pade.chat:5443/orinayo/chordpro-pdf-online/";
+	
+	if (!location.origin.startsWith("chrome-extension") && !location.origin.startsWith("https://jus-be.github.io/")) {
+		chordpro.src = location.host + "/orinayo/chordpro-pdf-online/";
+	}		
+	
 	const chatview = document.querySelector("#chatview");	
 	const gameCanvas = document.querySelector("#gameCanvas");
 	const toggleChat = document.querySelector("#toggle_chat");
+	const settings = document.querySelector("#settings");		
 	
 	toggleChat.addEventListener('click', function(event) {	
 		chatview.style.display = "none";	
@@ -6724,6 +6730,24 @@ function doChord() {
   }
 }
 
+function checkStartStopWebAudio() {
+	if (chordLoop) {
+		styleStarted = chordLoop.looping;
+	} 
+	else 
+		
+	if (bassLoop) {
+		styleStarted = bassLoop.looping;
+	}		
+	else
+		
+	if (drumLoop) {
+		styleStarted = drumLoop.looping;
+	}
+	
+	handleStartStopButton();	
+}
+
 function startStopWebAudio() {
 	let gapTime = 0.5;
 	const stillPlaying = drumLoop?.looping || bassLoop?.looping || chordLoop?.looping;
@@ -6736,7 +6760,7 @@ function startStopWebAudio() {
 		const goTime = audioContext.currentTime + gapTime;				
 
 		if (songSequence) {
-			orinayo_section.innerHTML = ">Arr A";					
+			orinayo_section.innerHTML = ">Arr WebAudioA";					
 			if (drumLoop && drumCheckedEle?.checked) drumLoop.start('arra', goTime);
 			if (bassLoop && bassCheckedEle?.checked) bassLoop.start("key" + (keyChange % 12), goTime);
 			if (chordLoop && chordCheckedEle?.checked) chordLoop.start("key" + (keyChange % 12), goTime);
@@ -6762,21 +6786,33 @@ function startStopWebAudio() {
 		}
 		
 	} else {
-		if ((pad.buttons[YELLOW] || midiNotes.size > 2) && introEnd) {	
-			orinayo_section.innerHTML = ">End 1";					
-			if (drumLoop) drumLoop.update('end1', false);	
-		} else {
-			orinayo_section.innerHTML = "End 1";						
-			if (drumLoop) drumLoop.stop();
-		}
-		
-		if (bassLoop) bassLoop.stop();			
-		if (chordLoop) chordLoop.stop();
-
+		endAudioStyle();
 		if (recordMode) setTimeout(stopRecording, 20000);				
 	}
 
 	return gapTime;
+}
+
+function endAudioStyle() {
+	console.debug("endAudioStyle");
+	
+	if ((pad.buttons[YELLOW] || midiNotes.size > 2) && introEnd) {	
+		orinayo_section.innerHTML = ">End 1";					
+		if (drumLoop) drumLoop.update('end1', false);	
+	} else {
+		orinayo_section.innerHTML = "End 1";						
+		if (drumLoop) drumLoop.stop();
+	}
+	
+	if (bassLoop) {	
+		bassLoop.finished = true;
+		bassLoop.stop();
+	}
+
+	if (chordLoop) {
+		chordLoop.finished = true;		
+		chordLoop.stop();
+	}	
 }
 
 function toggleStartStop() {
@@ -6801,9 +6837,8 @@ function toggleStartStop() {
 	const introEnd = introEndCheckedEle?.checked;	
 		
 	if (arranger == "webaudio") {				
-		if ((drumLoop || chordLoop) && realInstrument) {
+		if ((drumLoop || chordLoop || bassLoop) && realInstrument) {
 			startStopWebAudio();
-			styleStarted = !styleStarted;	
 		}
 			
 	}
@@ -7051,10 +7086,15 @@ function toggleStartStop() {
 		orinayo_section.innerHTML = SECTIONS[sectionChange];			
 	}	
 
+	handleStartStopButton();
+	handledStartStop = true;
+}
+
+function handleStartStopButton() {
 	playButton.innerText = !styleStarted ? "Play" : "Stop";
 	playButton.style.setProperty("--accent-fill-rest", !styleStarted ? "green" : "red");
-	if (midiOutput?.name == "X-TOUCH MINI" && !styleStarted) resetXTouch();	
-	handledStartStop = true;
+	playButton.style.backgroundColor = !styleStarted ? "green" : "red";
+	if (midiOutput?.name == "X-TOUCH MINI" && !styleStarted) resetXTouch();		
 }
 
 function updateCanvas() {
@@ -7555,26 +7595,6 @@ function nextArrNote() {
 			nextNoteTime = nextNoteTime + timestamp;
 		}			
 	}
-}
-
-function endAudioStyle() {
-	console.debug("endAudioStyle");
-	
-	if (chordLoop) {
-		chordLoop.finished = true;		
-		chordLoop.stop();
-	}
-
-	if (bassLoop) {	
-		bassLoop.finished = true;
-		bassLoop.stop();
-	}
-	
-	if (drumLoop) {
-		drumLoop.finished = true;		
-		drumLoop.stop();
-	}
-
 }
 
 function endSffStyle() {
