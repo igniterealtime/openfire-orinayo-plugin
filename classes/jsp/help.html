@@ -1,0 +1,554 @@
+﻿<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Welcome file</title>
+  <link rel="stylesheet" href="https://stackedit.io/style.css" />
+</head>
+
+<body class="stackedit">
+  <div class="stackedit__left">
+    <div class="stackedit__toc">
+      
+<ul>
+<li><a href="#introduction">Introduction</a></li>
+<li><a href="#install">Install</a></li>
+<li><a href="#description">Description</a>
+<ul>
+<li><a href="#desktop-view">Desktop View</a></li>
+<li><a href="#mobile-view">Mobile view</a></li>
+<li><a href="#the-application-logoicon">1 - The application logo/icon</a></li>
+<li><a href="#guitar-strum">2 - Guitar Strum</a></li>
+<li><a href="#arranger-type">3 - Arranger Type</a></li>
+<li><a href="#arranger-group">4 - Arranger Group</a></li>
+<li><a href="#arranger-style">5 - Arranger Style</a></li>
+<li><a href="#input-controller">6 - Input Controller</a></li>
+<li><a href="#sound-font-file">7 - Sound Font File</a></li>
+<li><a href="#midi-in">8 - MIDI In</a></li>
+<li><a href="#midi-out">9 - MIDI Out</a></li>
+<li><a href="#midi-synth">10 - MIDI Synth</a></li>
+<li><a href="#realguitar-out">11 - RealGuitar Out</a></li>
+<li><a href="#realguitar-strum">12 - RealGuitar Strum</a></li>
+<li><a href="#audio-device-in">13 - Audio Device In</a></li>
+</ul>
+</li>
+</ul>
+
+    </div>
+  </div>
+  <div class="stackedit__right">
+    <div class="stackedit__html">
+      <h1 id="introduction">Introduction</h1>
+<p>Orina Ayo work best with in desktop mode with a Logitech Guitar Hero Controlller or a LiberLive C1. If you do not have a guitar controller nor a keyboard midi controller, you can still use a wireless numeric keypad or the numeric keypad of your desktop computer. See supported devices below for more details.</p>
+<p>Also note that Gamepad compatible guitar controllers like the PDP Riff Master or the Logitech Guitar hero have been tested from a desktop computer. On mobile phones, only Bluetooth midi controllers or guitars like LiberLive C1 amd Lava Genie have been tested with OrinAyo.</p>
+<p>When OrinAyo works in standalone mode and not controlling an external arranger device via MIDI and generating all the music internally from WebAudio, you would need a high spec PC or mobile phone like an Intel iCore 7 or Apple M series laptop or a Samsung S25 spec type mobile phone.</p>
+<p>If you are using a Bluetooth guitar controller like LiberLive C1 or Lava Genie, you must first give the web browser (Chrome or Edge) permission to acces these devices. See section on Bluetooth below for more details.</p>
+<h1 id="install">Install</h1>
+<p>Orinayo can be setup and accessed as follows:</p>
+<ul>
+<li>Type <a href="https://jus-be.github.io/orinayo/index.html">https://jus-be.github.io/orinayo/index.html</a> into a Chrome or Edge browser to use it directly from a web page.</li>
+<li>Install it as a progressive web app from the web page. Click on the “install” or “Add to home page” browser links/buttons.</li>
+<li>Install it as a browser extension for Google Chrome and Microsoft Edge from <a href="https://chromewebstore.google.com/detail/orinayo/mhnemaeacdgnkmoibfeodelijegakklp">https://chromewebstore.google.com/detail/orinayo/mhnemaeacdgnkmoibfeodelijegakklp</a></li>
+<li>On Windows 10+ desktops, download orinayo.exe and run it directly from a desktop. It loads the above web page using webview2. See <a href="https://github.com/jchv/go-webview2">https://github.com/jchv/go-webview2</a>. If you are using Windows 10+, the WebView2 runtime should already be installed. If you don’t have it installed, you can download and install a copy from Microsoft’s website - <a href="https://developer.microsoft.com/en-us/microsoft-edge/webview2/">https://developer.microsoft.com/en-us/microsoft-edge/webview2/</a></li>
+</ul>
+<h1 id="description">Description</h1>
+<p>To use the application, you select a number of features you need, click on an action and watch the status display. For example, select web audio as your arranger type, select a web audio chord loop, click on play and watch the chords being displayed as you press the buttons of your guitar controller.</p>
+<p>To prevent un-desired results, make sure that unused and uneeded features are set to *<em>NOT USED</em></p>
+<p>The application views are roughly divided into three sections.</p>
+<ul>
+<li>Feature Selections</li>
+<li>Action buttons</li>
+<li>Status displays</li>
+</ul>
+<h2 id="desktop-view">Desktop View</h2>
+<img src="https://jus-be.github.io/orinayo/assets/screenshots/orinayo_desktop.svg">
+<h2 id="mobile-view">Mobile view</h2>
+<img src="https://jus-be.github.io/orinayo/assets/screenshots/orinayo_mobile.svg">
+<h2 id="the-application-logoicon">1 - The application logo/icon</h2>
+<p>Clicking on this toggle between mobile view and desktop views as shown above. Mobile view gives you simple straightforward access to live playing of audio loop styles with a guitar controller or a numeric keypad. Desktop view gives you access to evrything else.</p>
+<h2 id="guitar-strum">2 - Guitar Strum</h2>
+<img align="left" src="https://jus-be.github.io/orinayo/assets/screenshots/feature2.png">
+<p>Select what type of guitar to play. There is a selection of strumable acoustic and electric guitars. How the guitar plays arpeggios or strums is determined by the guitar controls. See feature #25 below for details.<br>
+<br clear="left"></p>
+<h2 id="arranger-type">3 - Arranger Type</h2>
+<img align="left" src="https://jus-be.github.io/orinayo/assets/screenshots/feature3.png">
+<p>Select what type of music arranger will generate the accompanying live drums, bass and rhythm sounds from the chords being played by the controller device.</p>
+<p>Three types of arrangers ara available to select from.</p>
+<ul>
+<li>Midi Style Files</li>
+<li>WebAudio Loops (OGG files)</li>
+<li>External Hardware<br>
+<br clear="left"></li>
+</ul>
+<h3 id="midi-style-files">Midi Style Files</h3>
+<p>The accompaniment music will be generated from MIDI style files used by Yamaha, Ketron and Casio. See features <a href="#4---arranger-group">#4</a> and <a href="#5---arranger-style">#5</a> below on how to select and load a style file.</p>
+<p>In order to play the GM MIDI notes in the style files, you would need to select a sound font. See feature <a href="#7---sound-font-file">#7</a> for more details.</p>
+<h3 id="web-audio-loops">Web Audio Loops</h3>
+<p>The accompaniment music will be generated from WebAudio loops that have been played and recorded from a range of arranger keyboards that includes Ketron, Yamaha and Roland. See features #15, #16 and #17 below on how to select and load audio loops for drums, bass and chordal instruments.</p>
+<h3 id="external-hardware">External Hardware</h3>
+<p>The accompaniment music will be generated from MIDI messages passed live to an arranger keyboard or arranger module or a looper that can be controlled externally with MIDI. The following hardware devices are supported:</p>
+<ul>
+<li>Ketron Event 76/61 keyboards, Event EVM, Event-X module, SD9 Series keyboard and SD90 module</li>
+<li>Yamaha PSR SX-600</li>
+<li>Yamaha MODX and Montage</li>
+<li>Yamaha QY100</li>
+<li>Korg Micro Arranger</li>
+<li>Giglad (Application)</li>
+<li>Boss RC 600 Loop Station</li>
+<li>Aeros Loop Studio</li>
+</ul>
+<h2 id="arranger-group">4 - Arranger Group</h2>
+<img align="left" src="https://jus-be.github.io/orinayo/assets/screenshots/feature4.png">
+<p>Use this dropdown box list to select what group of style files you want to select from.<br>
+<br clear="left"></p>
+<h2 id="arranger-style">5 - Arranger Style</h2>
+<p>This dropdown box list will contain a list of loaded style files for the current selected arranger group.  Select the style you want to use.</p>
+<p>To load a new style file use the <strong>Load</strong> button. See feature #27 for more details.<br>
+<br clear="left"></p>
+<h2 id="input-controller">6 - Input Controller</h2>
+<img align="left" src="https://jus-be.github.io/orinayo/assets/screenshots/feature6.png">
+<p>Select what device will be controller of the chords and style variations that will orchestrate the live music generation of OrinAyo.</p>
+<p>It recognises chord played from Guitar controllers, MIDI keyboard controllers and other non-keyboard USB MIDI controllers (like Artiphon Instrument 1 or Chorda).</p>
+<p>Select <strong>Keyboard</strong> for remote numpad or MIDI keyboard.<br>
+<br clear="left"></p>
+<h3 id="gamepad-guitar-controllers">Gamepad Guitar Controllers</h3>
+<img src="https://jus-be.github.io/orinayo/assets/screenshots/guitar_hero.png">
+<h4 id="chords">Chords</h4>
+<p>The five coloured fret buttons generate CHORD midi notes which are send on MIDI channel 4 when the strum bar goes up or down.  Twenty chord shapes are supported. There are six basic popular chords (I, IIm, IIIm, IV, V &amp; VIm) playable with a single or two fingers and fourteen other less used chords requiring two, three or even four fingers. The chord mapping in Nashville number format is fixed for now. It will become configurable in a future version.</p>
+<h4 id="basic">Basic</h4>
+
+<table>
+<thead>
+<tr>
+<th>Chord</th>
+<th>Green</th>
+<th>Red</th>
+<th>Yellow</th>
+<th>Blue</th>
+<th>Orange</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td></td>
+<td></td>
+<td>X</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>2m</td>
+<td></td>
+<td></td>
+<td></td>
+<td>X</td>
+<td></td>
+</tr>
+<tr>
+<td>3m</td>
+<td>X</td>
+<td></td>
+<td></td>
+<td>X</td>
+<td></td>
+</tr>
+<tr>
+<td>4</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td>X</td>
+</tr>
+<tr>
+<td>5</td>
+<td>X</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>6m</td>
+<td></td>
+<td>X</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table><h4 id="advanced">Advanced</h4>
+
+<table>
+<thead>
+<tr>
+<th>Chord</th>
+<th>Green</th>
+<th>Red</th>
+<th>Yellow</th>
+<th>Blue</th>
+<th>Orange</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1sus</td>
+<td></td>
+<td></td>
+<td>X</td>
+<td></td>
+<td>X</td>
+</tr>
+<tr>
+<td>1/3</td>
+<td></td>
+<td></td>
+<td>X</td>
+<td>X</td>
+<td></td>
+</tr>
+<tr>
+<td>2</td>
+<td></td>
+<td>X</td>
+<td></td>
+<td>X</td>
+<td></td>
+</tr>
+<tr>
+<td>3b</td>
+<td></td>
+<td>X</td>
+<td></td>
+<td>X</td>
+<td>X</td>
+</tr>
+<tr>
+<td>3</td>
+<td>X</td>
+<td></td>
+<td>X</td>
+<td>X</td>
+<td></td>
+</tr>
+<tr>
+<td>4min</td>
+<td></td>
+<td>X</td>
+<td>X</td>
+<td>X</td>
+<td>X</td>
+</tr>
+<tr>
+<td>4/5</td>
+<td></td>
+<td></td>
+<td>X</td>
+<td>X</td>
+<td>X</td>
+</tr>
+<tr>
+<td>4/6</td>
+<td></td>
+<td></td>
+<td></td>
+<td>X</td>
+<td>X</td>
+</tr>
+<tr>
+<td>5sus</td>
+<td>X</td>
+<td></td>
+<td>X</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>5min</td>
+<td>X</td>
+<td></td>
+<td></td>
+<td></td>
+<td>X</td>
+</tr>
+<tr>
+<td>5/7</td>
+<td>X</td>
+<td>X</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>5b</td>
+<td>X</td>
+<td>X</td>
+<td>X</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>6</td>
+<td></td>
+<td>X</td>
+<td>X</td>
+<td>X</td>
+<td></td>
+</tr>
+<tr>
+<td>7b</td>
+<td></td>
+<td>X</td>
+<td>X</td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table><p>Please note that the RC-600 Loop Station and Aeros Loop Studio have only six audio tracks. They can only play the basic six chords. However, when played together with the virtual guitars from Music Labs (RealGuitar, RealLPC, etc) in joystick mode as heard in the demo song above, the virtual guitars can handle the advanced mode chords and fill in the missing gaps. Arrangers do not have this limitation but do not sound as realistic as a looper with the exception of the Ketron Event series which can play audio tracks in their styles.</p>
+<h4 id="start-and-stop">Start and Stop</h4>
+<p>The button on the Directional (logo) knob used with the five coloured buttons determines how the arranger style starts and stops.</p>
+<p>Pressing the button alone toggles start and stop playing the current selected musical style in the arranger.</p>
+<p>Pressing the button as well as a coloured fret button starts the style as follows:</p>
+
+<table>
+<thead>
+<tr>
+<th>Button</th>
+<th>Starts</th>
+<th>Stops</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Green</td>
+<td>Intro-2</td>
+<td>End-2</td>
+</tr>
+<tr>
+<td>Red</td>
+<td>Intro-3</td>
+<td>End-3</td>
+</tr>
+<tr>
+<td>Yellow</td>
+<td>Intro-1</td>
+<td>End-1</td>
+</tr>
+<tr>
+<td>Blue</td>
+<td>-</td>
+<td>-</td>
+</tr>
+<tr>
+<td>Orange</td>
+<td>Fade In</td>
+<td>Fade Out</td>
+</tr>
+</tbody>
+</table><h4 id="style-variationssections-abcd">Style Variations/Sections (A,B,C,D)</h4>
+<p>The Star-Power button and the START button are used to control the style variations.</p>
+<p>When the Star-Power button is pressed on its own, it will cycles the style variations A–&gt;B–&gt;C–&gt;D–&gt;A.  When a colored fret key is also pressed, then it will play a fill for the current playing variation.<br>
+The START button cycles back down from A&lt;–B&lt;–C&lt;–D&lt;–A.</p>
+<h4 id="changing-song-key">Changing Song Key</h4>
+<p>Moving the Directonal (logo) knob right or up steps the playing key up ( C -&gt; C#) and moving it left or down steps the playing key down (C -&gt; B).</p>
+<p>Please note that this does nothing with a Looper. You have to preload the Looper with the audio files matching the song key. Both the RC 600 Loop Station and Aeros Loop Studio have memories to preload as many songs in all the needed keys for the live event.</p>
+<h4 id="other-playing-features">Other Playing Features</h4>
+<p>Pressing down on any of the five sections in the slider bar at the same time the strum bar is moved up or down can be used to perform other features.<br>
+This includes sending Foot Switch on/off mesages to Ketron Arrangers that can be used to mute arranger parts or perform any custom feature required by the user.</p>
+
+<table>
+<thead>
+<tr>
+<th>Button</th>
+<th>Strum Up</th>
+<th>Strum Down</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Green</td>
+<td>Play BREAK</td>
+<td>Play FILL</td>
+</tr>
+<tr>
+<td>Red</td>
+<td>Ketron FS-9</td>
+<td>Ketron FS-8</td>
+</tr>
+<tr>
+<td>Yellow</td>
+<td>Ketron FS-11</td>
+<td>Ketron FS-10</td>
+</tr>
+<tr>
+<td>Blue</td>
+<td>Ketron FS-13</td>
+<td>Ketron FS-12</td>
+</tr>
+<tr>
+<td>Orange</td>
+<td>Ketron FS-7</td>
+<td>Ketron FS-6</td>
+</tr>
+</tbody>
+</table><h3 id="liberlive-c1">LiberLive C1</h3>
+<p>OrinAyo will connect to the LiberLive C1 guitar by the Bluetooth connection used by the LiberLive mobile app. You can’t use both OrinAyo and the mobile app at the same time.<br>
+You can select different drum beats and guitar styles for both paddles and OrinAyo will use the tempo set by LiberLive except for web-audio styles that have fixed tempos.</p>
+<p>You can also use both the audio from LiberLive C1 and OrinAyo together in harmony</p>
+<h4 id="chords-1">Chords</h4>
+<img width="250px" align="left" src="https://jus-be.github.io/orinayo/assets/screenshots/feature6-1.jpeg">
+If you select the LiberLive C1 guitar, it uses a modified 7 basic chord keys mapping (7b, 6m, 5, 1, 4, 2m, 3m) different from the standard (1, 2m, 3m, 4, 5, 6m, 7m) by LiberLive and much closer to the 5 buttons of a Gamepad  guitar controller. There is also support for additional advanced 14 chord key mappings.
+<p>As shown here, the LiberL:ive C1 mobile application may not show them correctly. OrinAyo supports the chromatic scale (12 steps) and converts to and from the diatonic scale (7 steps) used by LiberLive C1 capo. See feature #23 for more details.<br>
+<br clear="left"></p>
+<h4 id="start-and-stop-1">Start and Stop</h4>
+<p>Press both paddles to toggle between starting and stopping the arranger feature. Pressing any of the 21 chord keys before doing so will cause the arranger to play an <em>intro</em> style variation before starting and an <em>end</em> style variation before stopping.</p>
+<h4 id="style-variationssections-abcd-1">Style Variations/Sections (A,B,C,D)</h4>
+<p>Press either strum paddle alone to control the style variations.</p>
+<p>When the first paddle is moved <strong>down</strong> on its own, OrinAyo will cycles the style variations A–&gt;B–&gt;C–&gt;D–&gt;A.  When it is moved <strong>up</strong>, OrinAyo will cycles back down from A&lt;–B&lt;–C&lt;–D&lt;–A.</p>
+<p>When the second paddle is moved <strong>down</strong>, then it will play a fill for the current playing variation. When it is moved <strong>up</strong>, then it plays a break for  the current playing variation.</p>
+<h3 id="lava-genie">Lava Genie</h3>
+<p>The Lava Genie behaves like the LiberLive C1. However, it can only be used as a MIDI controller.  There is currently no support for using the internal sounds with OrinAyo in harmony like the LiberLive C1.</p>
+<h4 id="chords-2">Chords</h4>
+<p>It also uses the modified 7 basic chord key mapping and the 21 advanced key mapping from LiberLive C1.</p>
+<h4 id="start-and-stop-2">Start and Stop</h4>
+<p>Press the Lava Genie Logo to start the OrinAyo arranger and use the Lava Genie rhythm stop button to stop the arranger.</p>
+<p>Pressing any of the 21 chord keys before doing so will cause the arranger to play an <em>intro</em> style variation before starting and an <em>end</em> style variation before stopping.</p>
+<h4 id="style-variationssections-abcd-2">Style Variations/Sections (A,B,C,D)</h4>
+<p>Press the Lava Genie Logo while the music plays to cycles the style variations A–&gt;B–&gt;C–&gt;D–&gt;A.</p>
+<h3 id="artiphon-instrument-1-and-chorda">Artiphon Instrument 1 and Chorda</h3>
+<p>With Artiphon Instrument 1 and Chorda, only the first five pads are used like a Guitar Hero controller. The strum bridge pads are used to provide control (strum, start/stop, fill, next/previous section).</p>
+<h2 id="sound-font-file">7 - Sound Font File</h2>
+<img align="left" src="https://jus-be.github.io/orinayo/assets/screenshots/feature7.png">
+<p>Select a loaded sound font file from the list. If your list is empty or you need a new sound font file, use the <em>Load</em> action button to load a sound font file (sf2) from your computer. See #27 for more details.<br>
+<br clear="left"></p>
+<h2 id="midi-in">8 - MIDI In</h2>
+<img align="left" src="https://jus-be.github.io/orinayo/assets/screenshots/feature8.png">
+<p>Select an input MIDI device to use with OrinAyo. Only one input device can use at any given time. This excludes the Stream Deck (USB device) that can be used with a MIDI input device. It however includes a MIDI keyboard controller. OrinAyo has only been tested with the Behringer X Touch Mini and the Carry-On Folding Controller 49.</p>
+<p>If the <a href="#3---arranger-type">Arranger Type</a> is set to <em>keyboard</em>, the MIDI note on and note off messages will play the <em>piano</em> and <em>pads</em>  keyboard voices. See feature #24 for more details.<br>
+<br clear="left"></p>
+<h3 id="program-change-messages-pc">Program Change Messages (PC)</h3>
+<p>With no music style playing, these messages are used to recall application settings saved as slots (1-128). See the Save action button in feature #27 for more details.</p>
+<p>Otherwise, they are used to control the playing style as follows:</p>
+
+<table>
+<thead>
+<tr>
+<th>Value</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0</td>
+<td>Mute/unmute lead guitar</td>
+</tr>
+<tr>
+<td>1</td>
+<td>Mute/unmute drums</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Mute/unmute bass</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Mute/unmute chords</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Mute/unmute guitar chorus effect</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Mute/unmute guitar reverb effect</td>
+</tr>
+<tr>
+<td>6</td>
+<td>Mute/unmute guitar compression effect</td>
+</tr>
+<tr>
+<td>7</td>
+<td>Mute/unmute guitar delay effect</td>
+</tr>
+<tr>
+<td>8</td>
+<td>Select style variation A</td>
+</tr>
+<tr>
+<td>9</td>
+<td>Select style variation B</td>
+</tr>
+<tr>
+<td>10</td>
+<td>Select style variation C</td>
+</tr>
+<tr>
+<td>11</td>
+<td>Select style variation D</td>
+</tr>
+</tbody>
+</table><h3 id="control-change-messages-cc">Control Change Messages (CC)</h3>
+<p>These messages are applied anytime</p>
+
+<table>
+<thead>
+<tr>
+<th>Value</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>12</td>
+<td>Keyboard piano volume</td>
+</tr>
+<tr>
+<td>13</td>
+<td>Keyboard pads volume</td>
+</tr>
+<tr>
+<td>1</td>
+<td>All Audio loops volume</td>
+</tr>
+<tr>
+<td>14</td>
+<td>Previous style variation</td>
+</tr>
+<tr>
+<td>15</td>
+<td>Start/stop arranger</td>
+</tr>
+<tr>
+<td>16</td>
+<td>Next style variation</td>
+</tr>
+</tbody>
+</table><h2 id="midi-out">9 - MIDI Out</h2>
+<img align="left" src="https://jus-be.github.io/orinayo/assets/screenshots/feature8.png">
+<p>Select a device from this list only if you plan to control an external arranger or looper device by OrinAyo. See <a href="#external-hardware"><em>External Hardware</em></a> above for more details.</p>
+<p>You will need to pre-configure the device and enable it to receive MIDI chord note messages on channel 4.<br>
+<br clear="left"></p>
+<h2 id="midi-synth">10 - MIDI Synth</h2>
+<img align="left" src="https://jus-be.github.io/orinayo/assets/screenshots/feature8.png">
+<p>If you want to use an external MIDI device to play the keyboard pads voice instead of the internal WebAudio sampler voice , then select it from here. The keyboard pads voice is a synth type voice played with the current active chord.  By default it is the GM voice 90 called <em>warm pads</em>. For more details. see feature #24 below.<br>
+<br clear="left"></p>
+<h2 id="realguitar-out">11 - RealGuitar Out</h2>
+<img align="left" src="https://jus-be.github.io/orinayo/assets/screenshots/feature8.png">
+<p>If you want to use any of the soft guitar products from MusicLabs like RealGuitar, RealLPC, RealStrat, etc instead of the internal WebAudio guitar in OrinAyo, then you would need a virtual MIDI device like loopMIDI configured for sending the MIDI messages. Select a device from this pulldown list.</p>
+<br clear="left">
+<h2 id="realguitar-strum">12 - RealGuitar Strum</h2>
+<img align="left" src="https://jus-be.github.io/orinayo/assets/screenshots/feature12.png">
+<p>If you want to play a MIDI based guitar strum loop pattern with the internal guitar or with an external guitar like RealGuitar or RealLPC, then use this to select on the patterns provided.</p>
+<p>Select <em>Internal Guitar</em> to use the internal WebAudio guitar and use the <em>next</em> and <em>previous</em> style variation controls to cycle through the provided strum patterns.</p>
+<p>Toggle start action button to start and stop the strum pattern loop. The strum will play to the currently set tempo. Please note that this feature cannot be used with a music style. Make sure no style is selected when using this to prevent unexpected results.</p>
+<br clear="left">
+<h2 id="audio-device-in">13 - Audio Device In</h2>
+
+    </div>
+  </div>
+</body>
+
+</html>

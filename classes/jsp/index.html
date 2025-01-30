@@ -20,15 +20,15 @@
 		<table>	
 		<tr valign="top">
 			<td>
-			  <img style="width: 64px; margin-right: 10px;" src="./assets/icon_128.png"/>		
+			  <a title="Click to switch to desktop view" id="mobile_logo"><img style="width: 64px; margin-right: 10px;cursor: pointer" src="./assets/icon_128.png"/></a>	
 			</td>
 			<td>
 			  <div id="mobile-toolbar"></div>
 			  <div style="margin-top: 5px;" id="mobile-controller"></div>			  
 			</td>
 			<td>
-			  <div id="mobile-chord-view" style="position: absolute; top: 5px; right: 0;"></div>			
-			  <div id="mobile-arr-view" style="position: absolute; top: 35px; right: 0;"></div>				  
+			  <div id="mobile-chord-view" style="margin-right: 3px; position: absolute; top: 5px; right: 0;"></div>			
+			  <div id="mobile-arr-view" style="margin-right: 3px; position: absolute; top: 35px; right: 0;"></div>				  
 			</td>
 		</tr>	
 		</table>
@@ -65,7 +65,7 @@
 				<div id="control-items"></div>
 			</center></td>
 			<td><center>
-				<b><span style="margin-right: 20px" id="extern-device">Controller</span></b>
+				<b><span style="margin-right: 20px" id="extern-device">External Controller</span></b>
 				<div id="control-device"></div>			
 			</center></td>				
 		</tr>	
@@ -78,11 +78,11 @@
     <input style="display:none" id="load-midifile" type="file" />
 	<table width="100%">	
 	<tr>
-		<td><img height=64 src="./assets/icon_128.png"/></td>
+		<td><a  title="Click to switch to mobile view" id="desktop_logo"><img style="width: 64px; margin-right: 10px;cursor: pointer" src="./assets/icon_128.png"/></a></td>
 		<td>
 			<div><center>
 				<fluent-button appearance="accent" title='Toggle play/stop' id="play">On</fluent-button>
-				<fluent-button appearance="accent" title='Style type' id="style_type">Normal</fluent-button>
+				<fluent-button appearance="accent" title='Style type. Normal or DJ with baked in chords' id="style_type">Normal</fluent-button>
 				<fluent-button appearance="accent" title='Guitar playing style' id="gamepad_mode">Color Tabs</fluent-button>
 				<fluent-button appearance="accent" title='Load external file (drum, chord, bass, midi, sty, etc)' id="load_file">Load</fluent-button>
 				<fluent-button appearance="accent" title='Pair/Unpair Stream Deck' id="stream_deck">Stream Deck</fluent-button>					
@@ -97,6 +97,7 @@
 				<fluent-button appearance="accent" title='Record performance as video or audio file' style="display: none;" id="record_song">Record</fluent-button>				
 				<fluent-button appearance="accent" title='Stream performance to hosted server' style="display: none;" id="stream_song">Start Stream</fluent-button>					
 				<fluent-button appearance="accent" title='Refresh application for new settings to take effect' id="reset_app">Refresh</fluent-button>			
+				<fluent-button appearance="accent" title='User guide and reference manual' id="help">Help</fluent-button>			
 			</center></div>	
 			<div id="sequencer2" style="margin:10px">
 			    <span style="font-size: 14px;margin-left:2px" id="sequencer">Tempo:<span id="showTempo">100</span></span>	
@@ -215,6 +216,10 @@
   <script src='./js/0253_Acoustic_Guitar_sf2_file.js'></script>
   <script src='./js/0341_Aspirin_sf2_file.js'></script>  
   <script src='./js/0260_JCLive_sf2_file.js'></script>
+  <script src='./js/0000_FluidR3_GM_sf2_file.js'></script>
+  <script src='./js/0890_FluidR3_GM_sf2_file.js'></script>
+  <script src='./js/0040_FluidR3_GM_sf2_file.js'></script>
+  <script src='./js/0940_FluidR3_GM_sf2_file.js'></script>
 
   <script src="./dist/converse.js"></script>  
   <script src="./assets/pedalboard.js" type="module"></script>   
