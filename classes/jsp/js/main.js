@@ -173,7 +173,6 @@ var notesInQueue = [];      		// the notes that have been put into the web audio
 var timerWorker = null;     		// The Web Worker used to fire timer messages
 
 var keysPlayer = new WebAudioFontPlayer();
-var keysMaster = null;
 var keysSelectedEle1 = null;
 var keysSelectedEle2 = null;
 
@@ -335,8 +334,31 @@ function mysetTimeout(fn, delay) {
   return id;
 };
 
-function messageHandler(evt) {
-	console.debug("messageHandler", evt);	
+async function messageHandler(evt) {
+	console.debug("messageHandler", evt.data);	
+
+	playButton.innerText = "Wait..";
+	playButton.style.setProperty("--accent-fill-rest", "red");
+		
+	let url = location.origin + "/orinayo/cp2midi";
+	
+	if (location.origin.startsWith("chrome-extension") || location.origin.startsWith("https://jus-be.github.io")) {
+		url = "https://pade.chat:5443/orinayo/cp2midi";
+	}
+	
+	const response = await fetch(url, {method: "POST", body: evt.data});
+	const blob = await response.blob();	
+	const buffer = await blob.arrayBuffer();		
+	const data = new Uint8Array(buffer);				
+	songSequence = parseMidi(data, "playback.mid");	
+	songSequence.name = "playback";		
+	setupSongSequence();
+
+	document.querySelector("#songSequence").selectedIndex = 1;
+	document.querySelector("#chord_pro").click();
+	document.querySelector("#show_lyrics").click();		
+	
+	toggleStartStop();
 }
 
 function handleLiberLive(selected) {
@@ -1813,7 +1835,7 @@ function saveConfig() {
 	config.realBass = realInstrument?.bassUrl;	
 	config.realdrumDevice = realdrumDevice ? realdrumDevice.deviceId : null;
 	config.guitarDeviceId = guitarDeviceId;
-	config.songName = songSequence ? songSequence.name : null;
+	config.songName = (songSequence && songSequence.name != "playback") ? songSequence.name : null;
 	config.arrName = arrSequence ? arrSequence.name : null;
 	config.sf2Name = arrSynth ? arrSynth.name : null;
 	config.arrangerGroup = arrangerGroup;
@@ -1938,17 +1960,11 @@ async function onloadHandler() {
 	
 	mobileViewpoint = config.mobileViewpoint || mobileViewpoint;
     navigator.serviceWorker.register("./js/main-sw.js").then(res => console.debug("service worker registered")).catch(err => console.debug("service worker not registered", err));	
-
-	keysMaster = keysPlayer.createChannel(audioContext);		  
+		  
 	const reverberator = keysPlayer.createReverberator(audioContext);	
 	reverberator.output.connect(audioContext.destination);
-	reverberator.wet.gain.setTargetAtTime(0.25, 0, 0.0001);	
-	keysMaster.output.connect(reverberator.input);		
-	
-	keysPlayer.loader.decodeAfterLoading(audioContext, '_tone_0000_FluidR3_GM_sf2_file');		  
-	keysPlayer.loader.decodeAfterLoading(audioContext, '_tone_0040_FluidR3_GM_sf2_file');	
-	keysPlayer.loader.decodeAfterLoading(audioContext, '_tone_0940_FluidR3_GM_sf2_file');	
-	keysPlayer.loader.decodeAfterLoading(audioContext, '_tone_0890_FluidR3_GM_sf2_file');	
+	reverberator.wet.gain.setTargetAtTime(0.25, 0, 0.0001);				
+	setupPianos(audioContext, reverberator);
 	
 	let version = "1.0.0";
 	if (!!chrome.runtime?.getManifest) version = chrome.runtime.getManifest().version;
@@ -2668,7 +2684,7 @@ async function handleChordPro(file, data) {
 	
 	let url = location.origin + "/orinayo/cp2midi";
 	
-	if (location.origin.startsWith("chrome-extension") || location.origin.startsWith("https://jus-be.github.io/")) {
+	if (location.origin.startsWith("chrome-extension") || location.origin.startsWith("https://jus-be.github.io")) {
 		url = "https://pade.chat:5443/orinayo/cp2midi";
 	}
 	
@@ -2987,8 +3003,8 @@ function handleNoteOff(note, device, velocity, channel) {
 	for (let [keyNote, value] of midiNotes)	
 	{
 		if (keyNote == note.number) {
-			if (value.envelope1) value.envelope1.cancel();
-			if (value.envelope2) value.envelope2.cancel();			
+			if (value.envelope1) value.envelope1.stop({ stopId: note.number });
+			if (value.envelope2) value.envelope2.stop({ stopId: note.number });			
 			midiNotes.delete(note.number);
 		}
 	}	
@@ -3117,17 +3133,76 @@ function handleNoteOff(note, device, velocity, channel) {
 function handleNoteOn(note, device, velocity, channel) {
 	console.debug("handleNoteOn", inputDeviceType, note, device, velocity, channel);
 	
-	const keysDuration = 240 / tempo;
-	let envelope1, envelope2;
+	if (note.number > 95) {		// only 76 key used for playing note. 77 - 88 are for arranger control
 	
-	if (keysSound1?.checked) {
-		const keysName = keysSelectedEle1.selectedIndex < 4 ? "0000_FluidR3_GM_sf2_file" : "0040_FluidR3_GM_sf2_file";
-		envelope1 = keysPlayer.queueWaveTable(audioContext, keysMaster.input, window["_tone_" + keysName], 0, note.number, keysDuration, (velocity * midiVolumeEle[0].value / 100));
+		if (note.number == 108) {			
+			sectionChange = 0;
+			
+			pad.buttons[YELLOW] = false;		
+			if (midiNotes.size > 0) pad.buttons[YELLOW] = true;	// play intro			
+			toggleStartStop();	
+		}	
+		else
+			
+		if (note.number == 96) {		// variation A
+			handleEncoderPress(8);
+		}
+		else
+			
+		if (note.number == 98) {		// variation B
+			handleEncoderPress(9);
+		}
+		else
+			
+		if (note.number == 100) {		// variation C
+			handleEncoderPress(10);
+		}
+		else
+			
+		if (note.number == 101) {		// variation D
+			handleEncoderPress(11);
+		}
+		else
+			
+		if (note.number == 97) {		// fill
+			handleButtonPress(1);
+		}
+		else
+			
+		if (note.number == 99) {		// break
+			handleButtonPress(9);
+		}	
+		else
+			
+		if (note.number > 101 && note.number < 108) {		// mute / unmute
+			handleEncoderPress(	note.number - 102);	
+		}	
+		
+		return;
 	}
 	
-	if (keysSound2?.checked) {
-		const keysPadName = keysSelectedEle2.selectedIndex  == 89 ? "0890_FluidR3_GM_sf2_file" : "0940_FluidR3_GM_sf2_file";	
-		envelope2 = keysPlayer.queueWaveTable(audioContext, keysMaster.input, window["_tone_" + keysPadName], 0, note.number, 3600, (velocity * midiVolumeEle[1].value / 100));
+	let envelope1, envelope2, thePiano = piano, thePad = warmPad;
+	
+	if (keysSound1?.checked) 
+	{		
+		if (keysSelectedEle1.selectedIndex > 3) {
+			thePiano = epianos[keysSelectedEle1.selectedIndex - 4];
+		}
+		
+		envelope1 = thePiano;
+		thePiano.output.setVolume(midiVolumeEle[0].value / 100 * 127);
+		thePiano.start({ note: parseInt(note.number), velocity: velocity * 127 }); 		
+	}
+	
+	if (keysSound2?.checked) 
+	{
+		if (keysSelectedEle2.selectedIndex != 89) {
+			thePad = stringPad;
+		}
+		
+		envelope2 = thePad;
+		thePad.output.setVolume(midiVolumeEle[1].value / 100 * 127);		
+		thePad.start({ note: parseInt(note.number), velocity: velocity * 127 }); 	
 	}	
 	
 	midiNotes.set(note.number, {inputDeviceType, note, device, velocity, channel, envelope1, envelope2});		
@@ -3963,7 +4038,8 @@ async function setupUI(config,err) {
 		});
 		
 		songSeq.options[0] = new Option("NOT USED", "songSeq");
-
+		songSeq.options[1] = new Option("ChordPro Playback", "playback");
+		
 		for (var i=0; i<song_sequences.length; i++) {
 			let selectedSong = false;
 			const url = song_sequences[i];
@@ -3973,7 +4049,7 @@ async function setupUI(config,err) {
 				selectedSong = true;
 				songSequence = {name: url};				
 			}
-			songSeq.options[i + 1] = new Option(songName, url, selectedSong, selectedSong);
+			songSeq.options[i + 2] = new Option(songName, url, selectedSong, selectedSong);
 		}			
 	})		
 	
@@ -4523,7 +4599,7 @@ async function setupUI(config,err) {
 		console.debug("selected realguitar style", realGuitarStyle, realguitar.value);				
 		saveConfig();
 	});
-
+	
 	songSeq.addEventListener("change", function()
 	{
 		songSequence = null;
@@ -4790,10 +4866,10 @@ async function setupUI(config,err) {
 		input.addListener("programchange", "all", function (e) {	// recall slot - use with m-vave foot control and desktop app BLE -> MIDI IN
 			console.debug("Received program change message", e.value);
 			
-			if (styleStarted) {
-				handleEncoderPress(e.value);
+			if (!styleStarted && e.value < 8) {	// recall ony 1-7 slots
+				recallRegistration(e.value + 1);				
 			} else {
-				recallRegistration(e.value + 1);
+				handleEncoderPress(e.value);
 			}
 		});		
 
@@ -5767,7 +5843,7 @@ function stopPads() {
 		if (firstChord instanceof Array && firstChord.length == 4) padsDevice.stopNote(firstChord[0] + 24, 2, {velocity: getVelocity()}); 
 		
 	} else {
-		for (let envelope of padsEnvelopes)	envelope.cancel();		
+		for (let note of padsEnvelopes)	warmPad.stop({ stopId: note });		
 		padsEnvelopes = [];	
 	}
 }
@@ -5818,20 +5894,20 @@ function playPads(chords, opts) {
 		padsDevice.playNote(chords, 2, opts);	
 		
 	} else {
-		const keysPadName = keysSelectedEle2.selectedIndex  == 89 ? "0890_FluidR3_GM_sf2_file" : "0940_FluidR3_GM_sf2_file";
-		const keysDuration = 240 / tempo;		
-		padsEnvelopes = [];
+		const keysPadName = keysSelectedEle2.selectedIndex  == 89 ? "0890_FluidR3_GM_sf2_file" : "0940_FluidR3_GM_sf2_file";		
+		padsEnvelopes = [];	
+		warmPad.output.setVolume(midiVolumeEle[1].value / 100 * 127);	
 	
 		if (chords instanceof Array) 
 		{
-			for (note of chords) {
-				const envelope = keysPlayer.queueWaveTable(audioContext, keysMaster.input, window["_tone_" + keysPadName], 0, note, keysDuration, (opts.velocity * midiVolumeEle[1].value / 100));
-				padsEnvelopes.push(envelope);
+			for (note of chords) {	
+				warmPad.start({ note: parseInt(note), velocity: opts.velocity * 127 }); 
+				padsEnvelopes.push(note);
 			}
 			
 		} else {
-			const envelope = keysPlayer.queueWaveTable(audioContext, keysMaster.input, window["_tone_" + keysPadName], 0, chords, keysDuration, (opts.velocity * midiVolumeEle[1].value / 100));
-			padsEnvelopes.push(envelope);
+			warmPad.start({ note: parseInt(chords), velocity: opts.velocity * 127 });
+			padsEnvelopes.push(chords);
 		}		
 	}
 }
@@ -8824,7 +8900,33 @@ function handleEncoderPress(encoder) {
 	if (encoder == 11) {
 		sectionChange = 3;
 		changeArrSection(true);   
-	}		
+	}	
+	else
+		
+	if (encoder == 12) {	// BANK 4 - Guitar strums
+		padsMode = 2;		
+		orinayo_pad.innerHTML = "Pad " + padsMode;
+    }
+	else
+		
+	if (encoder == 13) {
+		padsMode = 3;		
+		orinayo_pad.innerHTML = "Pad " + padsMode;
+    }	
+	else
+		
+	if (encoder == 14) {
+		padsMode = 4;		
+		orinayo_pad.innerHTML = "Pad " + padsMode;
+  
+    }		
+	else
+		
+	if (encoder == 15) {
+ 		padsMode = 5;		
+		orinayo_pad.innerHTML = "Pad " + padsMode;
+
+	}	
 }
 
 // -------------------------------------------------------

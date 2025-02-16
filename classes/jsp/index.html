@@ -137,11 +137,11 @@
 	<tr><td><b>Arranger Type</b></td><td><select id="arrangerType" type="text" class="form-control input"></select></td><td valign="top" rowspan="13" colspan="5"><div id="synth"></div></td></tr>	
 	<tr><td><b>Arranger Group</b></td><td><select id="arrangerGroup" type="text" class="form-control input"></select></td><td></td></tr>	
 	<tr><td><b>Arranger Style</b></td><td><select id="arrangerStyle" type="text" class="form-control input"></select></td><td></td></tr>	
-    <tr><td><b>Input Controller</b></td><td><select id="midiInType" type="text" class="form-control input"></select></td><td></td></tr>	
-	<tr><td><b>Sound Font File</b></td><td><select id="arrangerSf2" type="text" class="form-control input"></select></td><td></td></tr>	
+	<tr><td><b>MIDI SF2 File</b></td><td><select id="arrangerSf2" type="text" class="form-control input"></select></td><td></td></tr>	
     <tr><td><b>MIDI In</b></td><td><select id="midiInSel" type="text" class="form-control input"></select></td><td></td></tr>	
     <tr><td><b>MIDI Out</b></td><td><select id="midiOutSel" type="text" class="form-control input"></select></td><td></td></tr>
     <tr><td><b>MIDI Synth</b></td><td><select id="midiPadsSel" type="text" class="form-control input"></select></td><td></td></tr>	
+    <tr><td><b>Input Controller</b></td><td><select id="midiInType" type="text" class="form-control input"></select></td><td></td></tr>	
     <tr><td><b>RealGuitar Out</b></td><td><select id="midiFwdSel" type="text" class="form-control input"></select></td><td></td></tr>	
     <tr><td><b>RealGuitar Strum</b></td><td><select id="realguitar" type="text" class="form-control input"></select></td><td></td></tr>	
     <tr><td><b>Audio Device In</b></td><td><select id="inputAudioDevice" type="text" class="form-control input"></select></td><td></td></tr>	
@@ -183,7 +183,7 @@
 			</div>			
 		</td>
 	</tr>
-	<tr><td><b>Song Sequence</b></td><td><select id="songSequence" type="text" class="form-control input"></select></td><td></td></tr>	
+	<tr><td><b>Song Player</b></td><td><select id="songSequence" type="text" class="form-control input"></select></td><td></td></tr>	
 	<tr id="streams_list" style="display:none"><td><b>Active Streams</b></td><td colspan=7><select id="activeStreams" type="text" class="form-control input"></select></td></tr>		
 	</table>
   </div>  
@@ -216,14 +216,12 @@
   <script src='./js/0253_Acoustic_Guitar_sf2_file.js'></script>
   <script src='./js/0341_Aspirin_sf2_file.js'></script>  
   <script src='./js/0260_JCLive_sf2_file.js'></script>
-  <script src='./js/0000_FluidR3_GM_sf2_file.js'></script>
-  <script src='./js/0890_FluidR3_GM_sf2_file.js'></script>
-  <script src='./js/0040_FluidR3_GM_sf2_file.js'></script>
-  <script src='./js/0940_FluidR3_GM_sf2_file.js'></script>
 
   <script src="./dist/converse.js"></script>  
   <script src="./assets/pedalboard.js" type="module"></script>   
+  <script src="./js/piano-pads.js" type="module"></script>   
 
+  <script src="./js/soundfont2.js"></script>
   <script src="./js/pureknob.js"></script>  
   <script src="./js/basic-pitch.js"></script>    
   <script src="./js/tonal.min.js"></script>    
@@ -244,8 +242,7 @@
   <script src="./js/sf2.synth.min.js"></script>	 
   <script src="./js/midi.ble.js"></script>	
   <script src="./js/midi-creator.js"></script>	
-  <script src="./js/main.js"></script> 
-  
+  <script src="./js/main.js"></script>   
   <audio id="audioPlayer" autoplay style="display: none"> </audio>
   </div>
 </body>
