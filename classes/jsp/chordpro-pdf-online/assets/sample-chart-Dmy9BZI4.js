@@ -20,7 +20,7 @@ Your [E:2]love came [A:2]down and [C#m:2]picked me off the [B:2]ground
 As your [E:2]grace a[A:2]bounds, I [C#m:2]lift my [B:2]voice in [E:2]praise [A:2] [C#m:2] [*MB][B:2]
 
 
-{comment: Chorus}
+{comment: Chorus 1}
 [E:2]Praise the [A:2]Lord with [B:2]me[B/D#:2]
 [E:2]Lift your [A:2]voice and [B:2]sing[B/D#:2]
 'Cos there [E:2]is no [A:2]one like [B:2]Him[B/D#:2]
@@ -31,7 +31,7 @@ Your [E:2]Spirit [A:2]calls my [C#m:2]heart to re[B:2]ceive
 For[E:2]giveness [A:2]free, [C#m:2]even for [B:2]me
 As your [E:2]grace a[A:2]bounds, my [C#m:2]fears all [B:2]fade [E:2]away [A:2] [C#m:2] [*MB][B:2]
 
-{comment: Chorus}
+{comment: Chorus 2}
 [E:2]Praise the [A:2]Lord with [B:2]me[B/D#:2]
 [E:2]Lift your [A:2]voice and [B:2]sing[B/D#:2]
 'Cos there [E:2]is no [A:2]one like [B:2]Him[B/D#:2]
