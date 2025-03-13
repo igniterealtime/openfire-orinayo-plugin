@@ -1,4 +1,5 @@
 <%@ page import="org.jivesoftware.util.*,
+                 org.jivesoftware.openfire.*,
 				 org.ifsoft.orinayo.openfire.*,
                  java.util.*,
 				 net.sf.json.*,
@@ -34,8 +35,9 @@
     <body>
 
 <%
-	String service_url = JiveGlobals.getProperty("orinayo.url",  plugin.getUrl());
-	String publish_url = service_url + "/";	
+	String service_url = "https://" + XMPPServer.getInstance().getServerInfo().getHostname() + ":" + JiveGlobals.getProperty("httpbind.port.secure", "7443") + "/orinayo";
+	String publish_url = service_url + "/video-publisher.html";	
+	String subscribe_url = service_url + "/video-watcher.html";	
 %>	
 
 <% if (request.getParameter("deletesuccess") != null) { %>
@@ -57,13 +59,14 @@
 <div class='jive-contentBox'>
 <fmt:message key="orinayo.client.url.desc">
 	<fmt:param value="<%=publish_url%>"/>
+	<fmt:param value="<%=subscribe_url%>"/>	
 </fmt:message>
 <p>&nbsp;</p>
 <table cellpadding="0" cellspacing="0" border="0" width="100%">
 <thead>
     <tr>
         <th width="50%" nowrap align="left"><fmt:message key="orinayo.client.stream.id" /></th>
-        <th width="50%" nowrap align="center"><fmt:message key="orinayo.client.stream.subscribers" /></th>		  		
+        <th width="50%" nowrap align="left"><fmt:message key="orinayo.client.stream.subscribers" /></th>		  		
     </tr>
 </thead>
 <tbody>
@@ -72,13 +75,12 @@
 
 	for (int s=0; s<connections.length(); s++) {
 		JSONObject connection = connections.getJSONObject(s);
-		String roomName = connection.getString("streamKey");
+		String streamKey = connection.getString("streamKey");
 		int subscribers = connection.getJSONArray("whepSessions").length();
-		String subscribe_url = service_url + "/" + roomName;	
 %>
 		<tr>
-			<td width="50%" nowrap align="left"><a href="<%= subscribe_url %>"><%= roomName %></a></td>	
-			<td width="50%" nowrap align="center"><%= subscribers %></td>
+			<td width="50%" nowrap align="left"><%= streamKey %></td>	
+			<td width="50%" nowrap align="left"><%= subscribers %></td>
 		</tr>
 <%	
       }

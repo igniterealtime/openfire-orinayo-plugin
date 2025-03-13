@@ -30,6 +30,7 @@ var smplrPads = [];
 
 var droneActive = false;
 var tempoEle = null;
+var chatViewEle = null;
 var speechObject = null;
 var mobileViewpoint = false;
 var desktopContainer = null;
@@ -1176,8 +1177,7 @@ function startXMPP() {
 	
 	const streamSong = document.querySelector("#stream_song");	
 	const streamsList = document.querySelector("#streams_list");
-	const toggleChat = document.querySelector("#toggle_chat");
-	const chatview = document.querySelector("#chatview");		
+	const toggleChat = document.querySelector("#toggle_chat");		
 	
 	streamSong.addEventListener("click", async (evt) => {
 		const streamStarted = streamSong.innerText == "Stop Stream";
@@ -1247,7 +1247,7 @@ function startXMPP() {
 	});			
 		
 	const options = {
-		persistent_store: location.origin.startsWith("chrome-extension") ? 'BrowserExtLocal' : 'IndexedDB', 				
+		persistent_store: "localStorage", //location.origin.startsWith("chrome-extension") ? 'BrowserExtLocal' : 'IndexedDB', 				
 		discover_connection_methods: false,
 		clear_cache_on_logout: true,
 		assets_path: "./dist/",	
@@ -1260,10 +1260,7 @@ function startXMPP() {
 		auto_reconnect: true,			
 		auto_login: true,
 		auto_join_rooms: [
-			'lobby@conference.' + domain,
-		],
-		notify_all_room_messages: [
-			'lobby@conference.' + domain,
+			'orinayo@conference.' + domain,
 		],
 		websocket_url: conURI, 
 		jid: username + "@" + domain,
@@ -1271,13 +1268,14 @@ function startXMPP() {
 		keepalive: true,
 		hide_muc_server: true, 
 		play_sounds: false,
-		show_controlbox_by_default: false,			
+		show_controlbox_by_default: false,	
+		show_desktop_notifications: true,		
 		strict_plugin_dependencies: false,	
 		singleton: true,
 		view_mode: 'embedded',	
 		theme: 'dracula',
 		muc_show_logs_before_join: true,	
-		loglevel: 'debug',
+		loglevel: 'info',
 		whitelisted_plugins: ['orinayo']					
 	};
 	console.debug("startXMPP - converse options", options);
@@ -1303,8 +1301,8 @@ function parseStanza(stanza, attrs) {
 	return attrs;
 }
 
-function getSelectedChatBox() {
-	var models = _converse.chatboxes.models;
+async function getSelectedChatBox() {
+	var models = await _converse.api.chatboxes.get(); //_converse.chatboxes.models;
 	console.debug("getSelectedChatBox", models);
 
 	for (var i=0; i<models.length; i++) 
@@ -2137,7 +2135,6 @@ async function onloadHandler() {
 		});		
 	}
 	
-	
 	document.body.addEventListener('click', function(event) 	{
 		// TODO
 		if (inputDeviceType == "liberlivec1") initLiberLive();
@@ -2224,13 +2221,14 @@ async function onloadHandler() {
 		chordpro.src = "/orinayo/chordpro-pdf-online/";
 	}		
 	
-	const chatview = document.querySelector("#chatview");	
+	chatViewEle = document.querySelector("#chatview");
+	
 	const gameCanvas = document.querySelector("#gameCanvas");
 	const toggleChat = document.querySelector("#toggle_chat");
 	const settings = document.querySelector("#settings");		
 	
 	toggleChat.addEventListener('click', function(event) {	
-		chatview.style.display = "none";	
+		chatViewEle.style.display = "none";	
 		board.style.display = "none";
 		chordpro.style.display = "none";	
 		lyricsCanvas.style.display = "none";		
@@ -2239,11 +2237,11 @@ async function onloadHandler() {
 			settings.style.display = "";
 			mobileBody.style.display = "";
 			//gameCanvas.style.display = "";
-			chatview.style.display = "none";
+			chatViewEle.style.display = "none";
 	
 			
 		} else {
-			chatview.style.display = "";
+			chatViewEle.style.display = "";
 			settings.style.display = "none";
 			mobileBody.style.display = "none";
 			//gameCanvas.style.display = "none";			
@@ -2251,7 +2249,7 @@ async function onloadHandler() {
 	});
 	
 	pedalBoard.addEventListener('click', function(event) {	
-		chatview.style.display = "none";		
+		chatViewEle.style.display = "none";		
 		board.style.display = "none";
 		chordpro.style.display = "none";	
 		lyricsCanvas.style.display = "none";		
@@ -2272,7 +2270,7 @@ async function onloadHandler() {
 	const chordPro = document.querySelector("#chord_pro");
 	
 	chordPro.addEventListener('click', function(event) {
-		chatview.style.display = "none";			
+		chatViewEle.style.display = "none";			
 		board.style.display = "none";
 		chordpro.style.display = "none";	
 		lyricsCanvas.style.display = "none";		
@@ -2294,7 +2292,7 @@ async function onloadHandler() {
     lyricsContext.fillRect(0, 0, lyricsCanvas.width, lyricsCanvas.height);	
 	
 	showLyrics.addEventListener('click', function(event) {
-		chatview.style.display = "none";		
+		chatViewEle.style.display = "none";		
 		board.style.display = "none";
 		chordpro.style.display = "none";	
 		lyricsCanvas.style.display = "none";	
@@ -2914,6 +2912,8 @@ function handleSevenButtons(name, code) {
 }
 
 function handleNumPad(name, code) {
+	if (chatViewEle.style.display != "none") return	// can't use keyboard input and chat
+	
 	var handled = false;
 
 	if (!styleStarted && keyboard.get("0") && (keyboard.get("1") || keyboard.get("2") || keyboard.get("3") || keyboard.get("4") || keyboard.get("5") || keyboard.get("6") || keyboard.get("7") || keyboard.get("8") || keyboard.get("9"))) {
@@ -6206,16 +6206,6 @@ function playChord(chord, root, type, bass) {
 		
 		orinayo.innerHTML = displaySymbol;
 		
-		if (_converse) {
-			const jid = getSelectedChatBox();
-			
-			if (jid) {
-				const json = {bassNote, rootNote, firstNote, thirdNote, fifthNote, displaySymbol};
-				_converse.api.send(converse.env.$msg({to: jid, type: 'chat'}).c("json", {'xmlns': 'urn:xmpp:json:0'}).t(JSON.stringify(json)));							
-			}
-		}
-		
-
 		if (guitarName != "none" && !guitarDeviceId) 
 		{	
 			if (pad.axis[STRUM] == STRUM_UP || pad.axis[STRUM] == STRUM_DOWN)	
@@ -6411,7 +6401,16 @@ function playChord(chord, root, type, bass) {
 			} else {
 				if (arranger == "aeroslooper" && aerosPart < 3) aerosChordTrack = root - 48;
 			}		
-		}			
+		}
+
+		if (_converse) {
+			const jid = getSelectedChatBox();
+			
+			if (jid) {
+				const json = {bassNote, rootNote, firstNote, thirdNote, fifthNote, displaySymbol};
+				_converse.api.send(converse.env.$msg({to: jid, type: 'chat'}).c("json", {'xmlns': 'urn:xmpp:json:0'}).t(JSON.stringify(json)));							
+			}
+		}		
 		
 		activeChord = chord;
 	}
@@ -9487,7 +9486,7 @@ function hideChat(ev) {
 	ev.preventDefault();
 
     const domain = localStorage.getItem("collaboration_server.domain");	
-	if (domain) _converse.api.rooms.open('lobby@conference.' + JSON.parse(domain), {'bring_to_foreground': true}, true);	
+	if (domain) _converse.api.rooms.open('orinayo@conference.' + JSON.parse(domain), {'bring_to_foreground': true}, true);	
 }
 
 // -------------------------------------------------------

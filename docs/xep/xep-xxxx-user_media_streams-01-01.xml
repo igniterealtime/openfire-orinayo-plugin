@@ -94,6 +94,7 @@
   </whip>
 </iq>	
     ]]></example> 
+    <p>Depending on how the WHIP service is configured, the server may respond with a complete SDP including ICE candidates or may pushes a patched WHIP SDP with ICE candidates as they trickle in</p> 	
     <example caption='The server responds with a WHIP SDP answer for the client'><![CDATA[  
 <iq to='juliet@capulet.lit/producer' id='ih28sx61' from='shakespeare.lit' type='result'>
   <whip xmlns='urn:xmpp:whip:0'>
@@ -102,7 +103,7 @@
     </sdp>	
   </whip> 
 </iq>	
-    ]]></example> 
+    ]]></example> 	
     <example caption='The server pushes a patched WHIP SDP with ICE candidates'><![CDATA[  
 <iq to='juliet@shakespeare.lit/producer' id='87645fg23' from='shakespeare.lit' type='set'>
   <whip xmlns='urn:xmpp:whip:0'>
@@ -114,7 +115,7 @@
     ]]></example> 		
   </section2>
   
-  <section2 topic='Another user requests for user media stream' anchor='egress-media-stream'>   
+  <section2 topic='Another user requests to egress the media stream' anchor='egress-media-stream'>   
     <p>A sample protocol flow to egress a user media by the client</p> 
     <example caption='Client requests all active and accessible media streams'><![CDATA[  
 <iq to='shakespeare.lit' from='romeo@capulet.lit//consumer' id='ih28sx31' type='get'>
@@ -168,6 +169,7 @@
   </whep>
 </iq>	
     ]]></example>	
+    <p>Similiar to the WHIP service, the WHEP service may respond with a complete SDP including ICE candidates or may pushes a patched WHEP SDP with ICE candidates as they trickle in</p> 		
     <example caption='The server pushes a patched WHEP SDP with ICE candidates'><![CDATA[  
 <iq to='romeo@shakespeare.lit/consumer' id='54398hdg21' from='shakespeare.lit' type='set'>
   <whep id="ih28sx61" xmlns='urn:xmpp:whep:0'>
