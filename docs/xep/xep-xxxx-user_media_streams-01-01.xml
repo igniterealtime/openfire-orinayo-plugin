@@ -84,10 +84,10 @@
 </section1>
 <section1 topic="User Media Streams Workflow" anchor="workflow">
   <section2 topic='User requests server to ingest a media stream' anchor='ingest-media-stream'>   
-    <p>A sample protocol flow to ingest a media session from the client</p> 
+    <p>A sample protocol flow to ingest a media session from the client. By default, published media streams have a public scope. They can be accessed by any requesting user. The media stream owner can optionally specify an access scope attribute with values "protected" or "private" to restrict access to users with mutual presence subscription or other resources of the stream owner respectively.</p> 
     <example caption='Client sends a WHIP SDP offer of a media stream to server'><![CDATA[  
 <iq from='juliet@capulet.lit/producer' id='ih28sx61' type='set'>
-  <whip xmlns='urn:xmpp:whip:0'>
+  <whip xmlns='urn:xmpp:whip:0' scope='protected'>
     <sdp>
 	  ...... SDP OFFER
     </sdp>
@@ -122,7 +122,7 @@
   <whep xmlns='urn:xmpp:whep:0' />
 </iq>	
     ]]></example> 	
-    <example caption='The server returns a list of media stream identities'><![CDATA[  
+    <example caption='The server returns a list of media stream identities that are within the access scope of the requesting user'><![CDATA[  
 <iq to='romeo@capulet.lit//consumer' id='ih28sx31' from='shakespeare.lit' type='result'>
   <whep xmlns='urn:xmpp:whep:0'>
     <item id="ih28sx61">
