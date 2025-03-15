@@ -1168,7 +1168,7 @@ function startXMPP() {
 	let password = localStorage.getItem("collaboration_server.password");
 	
 	console.debug("startXMPP", conURI, username, domain);
-	if (!username || !password || !conURI || !domain) return;
+	if (isNull(username) || isNull(password )|| isNull(conURI) || isNull(domain)) return;
 	
 	username = JSON.parse(username);
 	password = JSON.parse(password);	
@@ -1206,13 +1206,17 @@ function startXMPP() {
 
 			_converse.api.listen.on('getToolbarButtons', function(toolbar_el, buttons)	{
 				let color = "fill:var(--chat-toolbar-btn-color);";
-				if (toolbar_el.model.get("type") === "chatroom") color = "fill:var(--muc-toolbar-btn-color);";
 				
-				buttons.push(html`
-					<button class="toolbar-utilities-hide" title="${__('Return to group chat')}" @click=${hideChat}/>
-						<converse-icon style="width:18px; height:18px; ${color}" class="fa fa-minus" size="1em"></converse-icon>
-					</button>
-				`);	
+				if (toolbar_el.model.get("type") !== "chatbox") {
+					color = "fill:var(--muc-toolbar-btn-color);";
+					
+				} else {				
+					buttons.push(html`
+						<button class="toolbar-utilities-hide" title="${__('Return to group chat')}" @click=${hideChat}/>
+							<converse-icon style="width:18px; height:18px; ${color}" class="fa fa-minus" size="1em"></converse-icon>
+						</button>
+					`);						
+				}
 							
 				buttons.push(html`
 					<button class="toolbar-utilities-scroll" title="${__('Scroll to the bottom')}" @click=${scrollToBottom}/>
@@ -1247,7 +1251,7 @@ function startXMPP() {
 	});			
 		
 	const options = {
-		persistent_store: "localStorage", //location.origin.startsWith("chrome-extension") ? 'BrowserExtLocal' : 'IndexedDB', 				
+		persistent_store: "localStorage", // TODO location.origin.startsWith("chrome-extension") ? 'BrowserExtLocal' : 'IndexedDB', 				
 		discover_connection_methods: false,
 		clear_cache_on_logout: true,
 		assets_path: "./dist/",	
@@ -2123,7 +2127,7 @@ async function onloadHandler() {
 
 	} else {
 		mobileContainer.style.display = "none";
-		window.resizeTo(1250, 1140);
+		window.resizeTo(1300, 1140);
 		desktopContainer.style.display = "";	
 
 		const desktopLogo = document.querySelector("#desktop_logo");
@@ -2236,7 +2240,7 @@ async function onloadHandler() {
 		if (settings.style.display == "none") {
 			settings.style.display = "";
 			mobileBody.style.display = "";
-			//gameCanvas.style.display = "";
+			gameCanvas.style.display = "";
 			chatViewEle.style.display = "none";
 	
 			
@@ -2244,7 +2248,7 @@ async function onloadHandler() {
 			chatViewEle.style.display = "";
 			settings.style.display = "none";
 			mobileBody.style.display = "none";
-			//gameCanvas.style.display = "none";			
+			gameCanvas.style.display = "none";			
 		}
 	});
 	
@@ -2277,13 +2281,15 @@ async function onloadHandler() {
 		
 		if (settings.style.display == "none") {
 			settings.style.display = "";
-			mobileBody.style.display = "";			
+			mobileBody.style.display = "";	
+			gameCanvas.style.display = "";			
 			chordpro.style.display = "none";		
 			
 		} else {
 			chordpro.style.display = "";
 			settings.style.display = "none";	
-			mobileBody.style.display = "none";			
+			mobileBody.style.display = "none";	
+			gameCanvas.style.display = "none";			
 		}
 	});	
 	
@@ -2299,13 +2305,15 @@ async function onloadHandler() {
 		
 		if (settings.style.display == "none") {
 			settings.style.display = "";
-			mobileBody.style.display = "";			
+			mobileBody.style.display = "";	
+			gameCanvas.style.display = "";			
 			lyricsCanvas.style.display = "none";	
 			
 		} else {
 			lyricsCanvas.style.display = "";
 			settings.style.display = "none";	
 			mobileBody.style.display = "none";
+			gameCanvas.style.display = "none";				
 		}
 	});		
 	
@@ -6873,10 +6881,10 @@ function changeArrSection(changed) {
 	
 	if (arranger == "webaudio") {
 		const autoFill = autoFillCheckedEle?.checked;	
+		orinayo_section.innerHTML = SECTIONS[sectionChange];		
 				
 		if (realInstrument && drumLoop && drumCheckedEle?.checked) {
 			console.debug("changeArrSection pressed " + changed, sectionChange);		
-			orinayo_section.innerHTML = orinayo_section.innerHTML;	
 			
 			if (sectionChange == 0) drumLoop.update(!changed || !autoFill ? 'arra': 'fila', false);
 			if (sectionChange == 1) drumLoop.update(!changed || !autoFill ? 'arrb': 'filb', false);
@@ -8685,15 +8693,19 @@ function setupSongSequence() {
 		};
 		timerWorker.postMessage({"interval":lookahead});	
 	}	
-		
-	playButton.innerText = "Play";	
-	playButton.style.setProperty("--accent-fill-rest", "green");	
+
+	if (arranger != "webaudio") {
+		playButton.innerText = "Play";	
+		playButton.style.setProperty("--accent-fill-rest", "green");	
+	}
 }
 
 function setupRealInstruments() {
 	console.debug("setupRealInstruments", realInstrument);
 	playButton.innerText = "Wait..";
 	playButton.style.setProperty("--accent-fill-rest", "red");	
+	
+	realInstrument.size = 0;
 
 	if (realInstrument.drum && realInstrument.drum.length == 7) {	
 		realInstrument.drums = {};
@@ -8725,7 +8737,8 @@ function setupRealInstruments() {
 
 		start = stop;
 		stop += end1Len;
-		realInstrument.drums["end1"] = {start, stop};		
+		realInstrument.drums["end1"] = {start, stop};
+		realInstrument.size += (int1Len + (arrLen * 4) + (fillLen * 4) + brkLen + end1Len);
 	}
 
 	if (realInstrument.chord && realInstrument.chord.length > 2) {	
@@ -8763,6 +8776,8 @@ function setupRealInstruments() {
 					stop += size;
 				}				
 			}
+			
+			realInstrument.size += stop;		
 		}
 		
 		// fill missing variations from defined 
@@ -8830,6 +8845,8 @@ function setupRealInstruments() {
 					stop += size;
 				}				
 			}
+			
+			realInstrument.size += stop;			
 		}
 		
 		// fill missing variations from defined 
@@ -8907,7 +8924,8 @@ function setupRealInstruments() {
 					}				
 				}	
 			}
-		}			
+		}
+		realInstrument.size += stop;
 	}	
 
 	drumLoop = null;	
@@ -8920,9 +8938,9 @@ function setupRealInstruments() {
 	if (realInstrument.drums) {
 
 		if (window.loopCache[realInstrument.drums.url]) {
-			loopWait+=500;
+			loopWait += realInstrument.size / 500;
 		} else {
-			loopWait+=1000;
+			loopWait+= realInstrument.size / 1000;
 			fetchLoopSample(realInstrument.drums.url);		
 		}
 		
@@ -8934,9 +8952,9 @@ function setupRealInstruments() {
 	if (realInstrument.basses) {
 		
 		if (window.loopCache[realInstrument.basses.url]) {
-			loopWait+=500;
+			loopWait += realInstrument.size / 500;
 		} else {
-			loopWait+=2000;
+			loopWait += realInstrument.size / 1000;
 			fetchLoopSample(realInstrument.basses.url);				
 		}
 		
@@ -8948,9 +8966,9 @@ function setupRealInstruments() {
 	if (realInstrument.chords) {
 		
 		if (window.loopCache[realInstrument.chords.url]) {
-			loopWait+=500;
+			loopWait += realInstrument.size / 500;
 		} else {
-			loopWait+=4000;
+			loopWait += realInstrument.size / 1000;
 			fetchLoopSample(realInstrument.chords.url);				
 		}
 		
@@ -8965,9 +8983,9 @@ function setupRealInstruments() {
 		if (realInstrument.drums) realInstrument.drums.riffUrl = realInstrument.riffUrl;			
 		
 		if (window.loopCache[realInstrument.riffUrl]) {
-			loopWait+=500;
+			loopWait += realInstrument.size / 50;
 		} else {
-			loopWait+=1000;
+			loopWait += realInstrument.size / 100;
 			fetchLoopSample(realInstrument.riffUrl);			
 		}	
 	}
@@ -8977,6 +8995,8 @@ function setupRealInstruments() {
 	}
 	
 	setTimeout(() => {
+		console.debug("loop loaded timeout", realInstrument.size, Math.ceil(loopWait));
+		
 		playButton.innerText = "Play";
 		playButton.style.setProperty("--accent-fill-rest", "green");	
 
@@ -8988,10 +9008,9 @@ function setupRealInstruments() {
 }
 
 function fetchLoopSample(url) {
-	console.debug("", url);
-	
 	if (window.loopCache[url]) return;
 
+	console.debug("fetchLoopSample", url);
 	
 	if (url.startsWith("assets")) 	{
 		fetch(url, {cache: "force-cache"})
@@ -9431,6 +9450,10 @@ function handleEncoderPress(encoder) {
 //
 // -------------------------------------------------------
 
+function isNull(value) {
+	return value == null || value == undefined || JSON.parse(value) == "";
+}
+
 function openChatbox(view) {
 	let jid = view.model.get("jid");
 	let type = view.model.get("type");
@@ -9478,7 +9501,7 @@ function scrollToBottom(ev) {
 	const chatview = _converse.chatboxviews.get(toolbar_el.model.get('jid'));		
 	console.debug("scrollToBottom", chatview);
 
-	chatview.scrollDown();
+	if (chatview) chatview.scrollDown();
 }
 
 function hideChat(ev) {

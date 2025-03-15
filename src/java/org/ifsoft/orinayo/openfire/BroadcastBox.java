@@ -247,6 +247,9 @@ public class BroadcastBox implements Plugin, PropertyEventListener, ProcessListe
 			Engine.environment.put("UDP_MUX_PORT_WHIP", udpPort);			
 			Engine.environment.put("UDP_MUX_PORT", udpPort);
 			Engine.environment.put("NETWORK_TEST_ON_START", "false");
+			Engine.environment.put("INCLUDE_PUBLIC_IP_IN_NAT_1_TO_1_IP", "true");	
+			Engine.environment.put("DEBUG_PRINT_OFFER", "true");			
+			Engine.environment.put("DEBUG_PRINT_ANSWER ", "true");			
 			
 			if (publicIpaddr != null && !publicIpaddr.trim().equals("")) {
 				Engine.environment.put("NAT_1_TO_1_IP", publicIpaddr);

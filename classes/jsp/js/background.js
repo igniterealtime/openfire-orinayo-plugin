@@ -51,6 +51,7 @@ if (location.protocol == "chrome-extension:") {
 
 	chrome.runtime.onStartup.addListener(() => {
 		console.debug("onStartup");	
+		openOrinAyoWindow();
 	});
 	
 	chrome.action.onClicked.addListener( () => {
@@ -89,7 +90,7 @@ const createOrinAyoWindow = () => {
 	chrome.windows.create(data, async (win) => {
 		//await chrome.offscreen.closeDocument();
 		chrome.storage.local.set({orinAyoWin: win.id});			
-		chrome.windows.update(win.id, {width: 1250, height: 1140});
+		chrome.windows.update(win.id, {width: 1300, height: 1140});
 	});
 }
 

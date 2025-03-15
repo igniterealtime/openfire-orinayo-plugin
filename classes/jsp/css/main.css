@@ -65,7 +65,7 @@ h1 {
 	height: 90%;	
 }
 
-#chordpro, #lyrics, #chatview {
+#chordpro,  #chatview {
 	border:none; 
 	margin:0; 
 	padding:0; 
@@ -73,6 +73,15 @@ h1 {
 	width: 90%;
 	height: 700px;
 }
+
+#chordpro, #lyrics, #chatview {
+	height: 875px;	
+}
+
+#lyrics {
+	width: 98%;
+}
+
 
 .synthtable {
 	margin: 10px;
