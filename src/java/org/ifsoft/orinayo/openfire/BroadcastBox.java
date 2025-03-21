@@ -45,22 +45,7 @@ import org.jivesoftware.util.PropertyEventDispatcher;
 import org.jivesoftware.util.PropertyEventListener;
 import org.jivesoftware.util.StringUtils;
 
-import org.eclipse.jetty.apache.jsp.JettyJasperInitializer;
-import org.eclipse.jetty.plus.annotation.ContainerInitializer;
-import org.eclipse.jetty.server.handler.ContextHandlerCollection;
-import org.eclipse.jetty.servlets.*;
-import org.eclipse.jetty.servlet.*;
-import org.eclipse.jetty.webapp.WebAppContext;
-
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
-import org.apache.tomcat.InstanceManager;
-import org.apache.tomcat.SimpleInstanceManager;
-import org.eclipse.jetty.util.security.*;
-import org.eclipse.jetty.security.*;
-import org.eclipse.jetty.security.authentication.*;
+import org.eclipse.jetty.ee8.webapp.WebAppContext;
 
 import java.lang.reflect.*;
 import java.util.*;
@@ -85,8 +70,7 @@ public class BroadcastBox implements Plugin, PropertyEventListener, ProcessListe
     private String orinayoExePath = null;
     private String orinayoHomePath = null;
     private ExecutorService executor;
-    private WebAppContext jspService;	
-    private ServletContextHandler webContext;		
+    private WebAppContext jspService;		
     private Cache muc_properties;	
     private WhipIQHandler whipIQHandler;	
     private WhepIQHandler whepIQHandler;
@@ -105,13 +89,14 @@ public class BroadcastBox implements Plugin, PropertyEventListener, ProcessListe
             Log.info("orinayo terminated - started");			
             if (executor != null)  executor.shutdown();
             if (orinayoThread != null) orinayoThread.destory();
-            if (jspService != null) HttpBindManager.getInstance().removeJettyHandler(jspService);
-			if (webContext != null) HttpBindManager.getInstance().removeJettyHandler(webContext);				
+            if (jspService != null) HttpBindManager.getInstance().removeJettyHandler(jspService);				
 			if (whipIQHandler != null) whipIQHandler.stopHandler();			
 			if (whepIQHandler != null) whepIQHandler.stopHandler();		
 
 			if (jmdns != null) jmdns.unregisterAllServices();
-			if (midiServer != null) midiServer.stop();			
+			if (midiServer != null) midiServer.stop();
+
+			jspService.destroy();
 
             Log.info("orinayo terminated - completed");
         }
@@ -219,12 +204,7 @@ public class BroadcastBox implements Plugin, PropertyEventListener, ProcessListe
         jspService = new WebAppContext(null, pluginDirectory.getPath() + "/classes/jsp",  "/orinayo");
         jspService.setClassLoader(this.getClass().getClassLoader());
         jspService.getMimeTypes().addMimeMapping("wasm", "application/wasm");
-
-        final List<ContainerInitializer> initializers = new ArrayList<>();
-        initializers.add(new ContainerInitializer(new JettyJasperInitializer(), null));
-        jspService.setAttribute("org.eclipse.jetty.containerInitializers", initializers);
-        jspService.setAttribute(InstanceManager.class.getName(), new SimpleInstanceManager());		
-
+ 
         Log.info("BroadcastBox jsp service enabled");
         HttpBindManager.getInstance().addJettyHandler(jspService);
     }
@@ -363,6 +343,19 @@ public class BroadcastBox implements Plugin, PropertyEventListener, ProcessListe
     public void privateMessageRecieved(JID a, JID b, Message message) {
 
     }
+	
+
+    public void roomClearChatHistory(long roomID, JID roomJID) {
+
+    }
+
+    public void roomCreated(long roomID, JID roomJID) {
+
+    }
+	
+    public void roomDestroyed(long roomID, JID roomJID) {
+
+    }	
 	
     //-------------------------------------------------------
     //
