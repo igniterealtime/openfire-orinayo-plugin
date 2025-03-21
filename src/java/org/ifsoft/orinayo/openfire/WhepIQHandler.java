@@ -118,6 +118,7 @@ public class WhepIQHandler extends IQHandler implements ServerFeaturesProvider
 						Element item = childElement.addElement("item");
 						String id = stream.getString("streamKey");
 						item.addAttribute("id", id);						
+						item.addAttribute("jid", id + "@" + domain);						
 					}
 				}								
 			}

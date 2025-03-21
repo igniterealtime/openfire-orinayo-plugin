@@ -1166,14 +1166,16 @@ function startXMPP() {
 	let domain = localStorage.getItem("collaboration_server.domain");
 	let username = localStorage.getItem("collaboration_server.username");
 	let password = localStorage.getItem("collaboration_server.password");
+	let roomName = localStorage.getItem("collaboration_server.room");	
 	
 	console.debug("startXMPP", conURI, username, domain);
-	if (isNull(username) || isNull(password )|| isNull(conURI) || isNull(domain)) return;
+	if (isNull(username) || isNull(password )|| isNull(conURI) || isNull(domain) || isNull(roomName)) return;
 	
 	username = JSON.parse(username);
 	password = JSON.parse(password);	
 	conURI = JSON.parse(conURI);
-	domain = JSON.parse(domain);	
+	domain = JSON.parse(domain);
+	roomName = JSON.parse(roomName);
 	
 	const streamSong = document.querySelector("#stream_song");	
 	const streamsList = document.querySelector("#streams_list");
@@ -1248,7 +1250,35 @@ function startXMPP() {
 			});
 			
 		}
-	});			
+	});	
+
+	const MUC_AFFILIATION_CHANGES_LIST = ['owner', 'admin', 'member', 'exowner', 'exadmin', 'exmember', 'exoutcast']
+	const MUC_ROLE_CHANGES_LIST = ['op', 'deop', 'voice', 'mute'];
+	const MUC_TRAFFIC_STATES_LIST = ['entered', 'exited'];
+
+	const MUC_INFO_CODES = {
+		'visibility_changes': ['100', '102', '103', '172', '173', '174'],
+		'self': ['110'],
+		'non_privacy_changes': ['104', '201'],
+		'muc_logging_changes': ['170', '171'],
+		'nickname_changes': ['210', '303'],
+		'disconnect_messages': ['301', '307', '321', '322', '332', '333'],
+		'affiliation_changes': [MUC_AFFILIATION_CHANGES_LIST],
+		'join_leave_events': [MUC_TRAFFIC_STATES_LIST],
+		'role_changes': [MUC_ROLE_CHANGES_LIST],
+	};
+
+	const mucShowInfoMessages = [
+		MUC_INFO_CODES.visibility_changes,
+		MUC_INFO_CODES.self,
+		MUC_INFO_CODES.non_privacy_changes,
+		MUC_INFO_CODES.muc_logging_changes,
+		MUC_INFO_CODES.nickname_changes,
+		MUC_INFO_CODES.disconnect_messages,
+		MUC_INFO_CODES.affiliation_changes,
+		MUC_INFO_CODES.join_leave_events,
+		MUC_INFO_CODES.role_changes,
+	]	
 		
 	const options = {
 		persistent_store: "localStorage", // TODO location.origin.startsWith("chrome-extension") ? 'BrowserExtLocal' : 'IndexedDB', 				
@@ -1264,7 +1294,7 @@ function startXMPP() {
 		auto_reconnect: true,			
 		auto_login: true,
 		auto_join_rooms: [
-			'orinayo@conference.' + domain,
+			roomName + '@conference.' + domain,
 		],
 		websocket_url: conURI, 
 		jid: username + "@" + domain,
@@ -1273,12 +1303,14 @@ function startXMPP() {
 		hide_muc_server: true, 
 		play_sounds: false,
 		show_controlbox_by_default: false,	
-		show_desktop_notifications: true,		
+		show_desktop_notifications: true,	
+		hide_offline_users: true,		
 		strict_plugin_dependencies: false,	
 		singleton: true,
 		view_mode: 'embedded',	
 		theme: 'dracula',
 		muc_show_logs_before_join: true,	
+		muc_show_info_messages: [], //mucShowInfoMessages,
 		loglevel: 'info',
 		whitelisted_plugins: ['orinayo']					
 	};
@@ -4746,9 +4778,13 @@ async function setupUI(config, err) {
 	realBassLoop.options[0] = new Option("NOT USED", "realBassLoop", false, false);		
 	realChordsLoop.options[0] = new Option("NOT USED", "realChordsLoop", false, false);
 	realRiffLoop.options[0] = new Option("NOT USED", "realRiffLoop", false, false);	
+	
+	let drumIndex = 0;
 			
 	for (var i=0; i<drum_loops.length; i++) {
 		const drumLoop = drum_loops[i];
+		if (drumLoop.startsWith("extra") && location.protocol == "chrome-extension:") continue;
+				
 		let selectedDrum = false;	
 		const loopData = drumLoop.substring(drumLoop.lastIndexOf("/") + 1).replace(".drum", "");
 		const metaData = loopData.split("_");		
@@ -4760,11 +4796,16 @@ async function setupUI(config, err) {
 			realInstrument.drum = metaData;				
 			realInstrument.drumUrl = drumLoop;		
 		}
-		realDrumsLoop.options[i + 1] = new Option(drumName, drumLoop, selectedDrum, selectedDrum);
+		realDrumsLoop.options[drumIndex + 1] = new Option(drumName, drumLoop, selectedDrum, selectedDrum);
+		drumIndex++;
 	}
 
+	let bassIndex = 0;
+	
 	for (var i=0; i<bass_loops.length; i++) {
 		const bassLoop = bass_loops[i];
+		if (bassLoop.startsWith("extra") && location.protocol == "chrome-extension:") continue;
+		
 		let selectedBass = false;	
 		const loopData = bassLoop.substring(bassLoop.lastIndexOf("/") + 1).replace(".bass", "");
 		const metaData = loopData.split("_");		
@@ -4776,11 +4817,16 @@ async function setupUI(config, err) {
 			realInstrument.bass = metaData;	
 			realInstrument.bassUrl = bassLoop;				
 		}
-		realBassLoop.options[i + 1] = new Option(bassName, bassLoop, selectedBass, selectedBass);
+		realBassLoop.options[bassIndex + 1] = new Option(bassName, bassLoop, selectedBass, selectedBass);
+		bassIndex++;
 	}
+
+	let chordIndex = 0;
 	
 	for (var i=0; i<chord_loops.length; i++) {
 		const chordLoop = chord_loops[i];
+		if (chordLoop.startsWith("extra") && location.protocol == "chrome-extension:") continue;
+		
 		let selectedChord = false;	
 		const loopData = chordLoop.substring(chordLoop.lastIndexOf("/") + 1).replace(".chord", "");
 		const metaData = loopData.split("_");		
@@ -4792,11 +4838,16 @@ async function setupUI(config, err) {
 			realInstrument.chord = metaData;	
 			realInstrument.chordUrl = chordLoop;				
 		}
-		realChordsLoop.options[i + 1] = new Option(chordName, chordLoop, selectedChord, selectedChord);
+		realChordsLoop.options[chordIndex + 1] = new Option(chordName, chordLoop, selectedChord, selectedChord);
+		chordIndex++;
 	}
+	
+	let riffIndex = 0;
 	
 	for (var i=0; i<riff_loops.length; i++) {
 		const riffLoop = riff_loops[i];
+		if (riffLoop.startsWith("extra") && location.protocol == "chrome-extension:") continue;
+		
 		let selectedRiff = false;	
 		const loopData = riffLoop.substring(riffLoop.lastIndexOf("/") + 1).replace(".riff", "");
 		const metaData = loopData.split("_");		
@@ -4808,18 +4859,16 @@ async function setupUI(config, err) {
 			realInstrument.riff = metaData;	
 			realInstrument.riffUrl = riffLoop;				
 		}
-		realRiffLoop.options[i + 1] = new Option(riffName, riffLoop, selectedRiff, selectedRiff);
+		realRiffLoop.options[riffIndex + 1] = new Option(riffName, riffLoop, selectedRiff, selectedRiff);
+		riffIndex++;
 	}	
-
-	let drumIndex = drum_loops.length + 1;
-	let chordIndex = chord_loops.length + 1;
-	let bassIndex = bass_loops.length + 1;
-	let riffIndex = riff_loops.length + 1;
 	
 	indexedDB.databases().then(function (databases) 
 	{
 		databases.forEach(function (db) {				
 			const loop = db.name;
+			//console.debug("IndexedDB file", loop);
+			
 			let selectedLoop = false;			
 		
 			if (db.name.toLowerCase().endsWith(".drum")) {
@@ -7681,7 +7730,15 @@ function handleStartStopButton() {
 	playButton.innerText = !styleStarted ? "Play" : "Stop";
 	playButton.style.setProperty("--accent-fill-rest", !styleStarted ? "green" : "red");
 	playButton.style.backgroundColor = !styleStarted ? "green" : "red";
-	if (midiOutput?.name == "X-TOUCH MINI" && !styleStarted) resetXTouch();		
+	
+	if (midiOutput?.name == "X-TOUCH MINI" && !styleStarted) {
+		resetXTouch();	
+	}
+	
+	if (chrome.action) {
+		chrome.action.setBadgeBackgroundColor({ color: !styleStarted ? "green" : "red"});
+		chrome.action.setBadgeText({ text: !styleStarted ? " " : " " });	
+	}
 }
 
 function updateCanvas() {
@@ -9017,7 +9074,7 @@ function fetchLoopSample(url) {
 
 	console.debug("fetchLoopSample", url);
 	
-	if (url.startsWith("assets")) 	{
+	if (url.startsWith("assets") || url.startsWith("extra")) 	{
 		fetch(url, {cache: "force-cache"})
 			.then(response => response.arrayBuffer())
 			.then(buffer => this.audioContext.decodeAudioData(buffer))
@@ -9513,8 +9570,12 @@ function hideChat(ev) {
 	ev.stopPropagation();
 	ev.preventDefault();
 
+	const roomName = localStorage.getItem("collaboration_server.room");	
     const domain = localStorage.getItem("collaboration_server.domain");	
-	if (domain) _converse.api.rooms.open('orinayo@conference.' + JSON.parse(domain), {'bring_to_foreground': true}, true);	
+	
+	if (roomName && domain) {
+		_converse.api.rooms.open(JSON.parse(roomName) + '@conference.' + JSON.parse(domain), {'bring_to_foreground': true}, true);	
+	}
 }
 
 // -------------------------------------------------------
