@@ -4,18 +4,12 @@ let conURI = localStorage.getItem("collaboration_server.server_url");
 let domain = localStorage.getItem("collaboration_server.domain");
 
 if (!conURI || !domain) {
+	conURI = JSON.stringify(location.protocol.replace("http", "ws") + "//" + location.host + '/ws/');		
+	domain = JSON.stringify(location.hostname);
 	
 	if (location.origin.startsWith("chrome-extension") || location.hostname == "jus-be.github.io") {
-		conURI = JSON.stringify("wss://pade.chat:5443/ws/");		
-		domain = JSON.stringify("pade.chat");			
-	} else {
-		conURI = JSON.stringify(location.protocol.replace("http", "ws") + "//" + location.host + '/ws/');		
-		domain = JSON.stringify(location.hostname);
-		
-		if (location.origin.startsWith("chrome-extension")) {
-			conURI = JSON.stringify("ws://localhost:7070/ws/");		
-			domain = JSON.stringify("localhost");
-		}
+		conURI = JSON.stringify("ws://localhost:7070/ws/");		
+		domain = JSON.stringify("localhost");
 	}
 
 	localStorage.setItem("collaboration_server.server_url", conURI);
@@ -26,13 +20,15 @@ orinayo_config.options.opts.about = "<b>Introduction</b><p><a target=_blank href
 orinayo_config.options.opts.autoSave = true;
 orinayo_config.options.opts.saveDefaults = false;
 
-orinayo_config.options.addTab('General', [
-    { type: 'h3', desc: 'Features' },
-    { type: 'h3', desc: 'Dashboard' },	
-    { type: 'h3', desc: 'Actions' },	
+orinayo_config.options.addTab('Songs', [
+    { name: 'wall_paper', type: 'select', desc: 'The background image shown when projecting song lyrics', options: [
+      {value: 'assets/backgrounds/blank.png',  desc: 'Blank black backround'}, 
+	  {value: 'assets/backgrounds/wheat.png', desc: 'Wheat farmland'}
+    ]},	
 ]);
 
 orinayo_config.options.addTab('Collaboration Server', [
+    { name: 'enable_xmpp', desc: 'Enable connection to XMPP collaboration server' },
     { name: 'username', 'default': '', type: 'text', desc: 'XMPP Username', singleline: true },
     { name: 'password', 'default': '', type: 'password', desc: 'Password', singleline: true },
     { name: 'domain', 'default': '', type: 'text', desc: 'XMPP Domain', singleline: true },	

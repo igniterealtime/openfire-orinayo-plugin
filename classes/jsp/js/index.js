@@ -27,7 +27,13 @@ const CONTROL = 100;
 
 var smplrKeys = [];
 var smplrPads = [];
+var smplrLeads = [];
+var noteStrings = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+var whitelistedPlugins = [];
 
+var analyser = null;
+var mediaStreamSource = null;
+var leadInstrument = null;
 var droneActive = false;
 var tempoEle = null;
 var chatViewEle = null;
@@ -64,6 +70,7 @@ var watchConnection = null;
 var lavaGenieWaitout = 1000;
 var keysSound1 = null;
 var keysSound2 = null;
+var keysSound3 = null;
 var savedDrumVol = 100;
 var savedBassVol = 100;
 var savedChordVol = 100;
@@ -79,12 +86,14 @@ var chordVol = 40;
 var drumVol = 85;
 var keysSound1Vol = 100;
 var keysSound2Vol = 50;
+var keysSound3Vol = 90;
 var chordproParser = new ChordSheetJS.ChordProParser();
 var lyricsX = 2;
 var lyricsY = 18;
 var displayShape = null;
 var lyricsCanvas = null;
 var lyricsContext = null;
+var lyricsImage = null;
 var recorderFilename = null;
 var mediaRecorder = null;
 var recordMode = false;
@@ -135,6 +144,7 @@ var orinayo_section = null;
 var orinayo_strum = null;
 var orinayo_pad = null;
 var orinayo_reg = null;
+var orinayo_pitch = null;
 
 var base = BASE;
 var key = "C"
@@ -185,6 +195,7 @@ var timerWorker = null;     		// The Web Worker used to fire timer messages
 var keysPlayer = new WebAudioFontPlayer();
 var keysSelectedEle1 = null;
 var keysSelectedEle2 = null;
+var keysSelectedEle3 = null;
 
 var guitarName = "none";
 var player = new WebAudioFontPlayer();
@@ -349,13 +360,10 @@ async function messageHandler(evt) {
 
 	playButton.innerText = "Wait..";
 	playButton.style.setProperty("--accent-fill-rest", "red");
-		
-	let url = location.origin + "/orinayo/cp2midi";
-	
-	if (location.origin.startsWith("chrome-extension") || location.origin.startsWith("https://jus-be.github.io")) {
-		url = "https://pade.chat:5443/orinayo/cp2midi";
-	}
-	
+
+	const parts = JSON.parse(localStorage.getItem("collaboration_server.server_url")).split("/");	
+	const url = "https://" + parts[2] + "/orinayo/cp2midi";	
+
 	const response = await fetch(url, {method: "POST", body: evt.data});
 	const blob = await response.blob();	
 	const buffer = await blob.arrayBuffer();		
@@ -1179,7 +1187,9 @@ function startXMPP() {
 	
 	const streamSong = document.querySelector("#stream_song");	
 	const streamsList = document.querySelector("#streams_list");
-	const toggleChat = document.querySelector("#toggle_chat");		
+	const toggleChat = document.querySelector("#toggle_chat");	
+	const chordPro = document.querySelector("#chord_pro");		
+	const chordpro = document.querySelector("#chordpro");		
 	
 	streamSong.addEventListener("click", async (evt) => {
 		const streamStarted = streamSong.innerText == "Stop Stream";
@@ -1188,11 +1198,42 @@ function startXMPP() {
 		await handleMediaStream(streamStarted);
 		streamSong.style.setProperty("--accent-fill-rest", !streamStarted ? "red" : "green");			
 	});	
+
+
+	const MUC_AFFILIATION_CHANGES_LIST = ['owner', 'admin', 'member', 'exowner', 'exadmin', 'exmember', 'exoutcast']
+	const MUC_ROLE_CHANGES_LIST = ['op', 'deop', 'voice', 'mute'];
+	const MUC_TRAFFIC_STATES_LIST = ['entered', 'exited'];
+
+	const MUC_INFO_CODES = {
+		'visibility_changes': ['100', '102', '103', '172', '173', '174'],
+		'self': ['110'],
+		'non_privacy_changes': ['104', '201'],
+		'muc_logging_changes': ['170', '171'],
+		'nickname_changes': ['210', '303'],
+		'disconnect_messages': ['301', '307', '321', '322', '332', '333'],
+		'affiliation_changes': [MUC_AFFILIATION_CHANGES_LIST],
+		'join_leave_events': [MUC_TRAFFIC_STATES_LIST],
+		'role_changes': [MUC_ROLE_CHANGES_LIST],
+	};
+
+	const mucShowInfoMessages = [
+		MUC_INFO_CODES.visibility_changes,
+		MUC_INFO_CODES.self,
+		MUC_INFO_CODES.non_privacy_changes,
+		MUC_INFO_CODES.muc_logging_changes,
+		MUC_INFO_CODES.nickname_changes,
+		MUC_INFO_CODES.disconnect_messages,
+		MUC_INFO_CODES.affiliation_changes,
+		MUC_INFO_CODES.join_leave_events,
+		MUC_INFO_CODES.role_changes,
+	]	
+	
 	
 	converse.plugins.add("orinayo", {
 		dependencies: [],
 
 		initialize: function () {
+			console.debug("orinayo plugin initialize");				
 			_converse = this._converse;
 			const __ = _converse.__;
 			const html = converse.env.html;
@@ -1245,6 +1286,11 @@ function startXMPP() {
 				streamSong.style.display = "";
 				streamsList.style.display = "";
 				toggleChat.style.display = "";
+				
+				const parts = conURI.split("/");
+				chordpro.src = "https://" + parts[2] + "/orinayo/chordpro-pdf-online/";					
+				chordPro.style.display = "";
+				
 				streamSong.style.setProperty("--accent-fill-rest", "green");
 				setTimeout(fetchStreams);	
 			});
@@ -1252,33 +1298,10 @@ function startXMPP() {
 		}
 	});	
 
-	const MUC_AFFILIATION_CHANGES_LIST = ['owner', 'admin', 'member', 'exowner', 'exadmin', 'exmember', 'exoutcast']
-	const MUC_ROLE_CHANGES_LIST = ['op', 'deop', 'voice', 'mute'];
-	const MUC_TRAFFIC_STATES_LIST = ['entered', 'exited'];
+	whitelistedPlugins.push("orinayo");	
+	whitelistedPlugins.push("screencast");		
+	whitelistedPlugins.push("voicechat");	
 
-	const MUC_INFO_CODES = {
-		'visibility_changes': ['100', '102', '103', '172', '173', '174'],
-		'self': ['110'],
-		'non_privacy_changes': ['104', '201'],
-		'muc_logging_changes': ['170', '171'],
-		'nickname_changes': ['210', '303'],
-		'disconnect_messages': ['301', '307', '321', '322', '332', '333'],
-		'affiliation_changes': [MUC_AFFILIATION_CHANGES_LIST],
-		'join_leave_events': [MUC_TRAFFIC_STATES_LIST],
-		'role_changes': [MUC_ROLE_CHANGES_LIST],
-	};
-
-	const mucShowInfoMessages = [
-		MUC_INFO_CODES.visibility_changes,
-		MUC_INFO_CODES.self,
-		MUC_INFO_CODES.non_privacy_changes,
-		MUC_INFO_CODES.muc_logging_changes,
-		MUC_INFO_CODES.nickname_changes,
-		MUC_INFO_CODES.disconnect_messages,
-		MUC_INFO_CODES.affiliation_changes,
-		MUC_INFO_CODES.join_leave_events,
-		MUC_INFO_CODES.role_changes,
-	]	
 		
 	const options = {
 		persistent_store: "localStorage", // TODO location.origin.startsWith("chrome-extension") ? 'BrowserExtLocal' : 'IndexedDB', 				
@@ -1298,6 +1321,7 @@ function startXMPP() {
 		],
 		websocket_url: conURI, 
 		jid: username + "@" + domain,
+		nickname: username,
 		password: password,
 		keepalive: true,
 		hide_muc_server: true, 
@@ -1312,7 +1336,7 @@ function startXMPP() {
 		muc_show_logs_before_join: true,	
 		muc_show_info_messages: [], //mucShowInfoMessages,
 		loglevel: 'info',
-		whitelisted_plugins: ['orinayo']					
+		whitelisted_plugins: whitelistedPlugins					
 	};
 	console.debug("startXMPP - converse options", options);
 	converse.initialize(options);	
@@ -1818,7 +1842,7 @@ function handleChordaMidiMessage(evt) {
 }
 
 function loadMidiSynth() {
-	if (smplrPads.length < 2) {
+	if (smplrPads.length < 2 || smplrLeads.length < 1) {
 		setTimeout(loadMidiSynth, 1000);	// we need to wait until smplrkeys and smplrPads (ch1 & ch2) are loaded.
 		return;
 	}
@@ -1916,6 +1940,7 @@ function saveConfig() {
 	config.bassVol = savedBassVol;
 	config.keysSound1Vol = keysSound1Vol;
 	config.keysSound2Vol = keysSound2Vol;
+	config.keysSound3Vol = keysSound3Vol;
 	
 	for (let i=0; i<19; i++) {
 		config["channel" + i] = document.getElementById("arr-instrument-" + i)?.checked;
@@ -1975,6 +2000,7 @@ function getDefaultData() {
 		"bassVol": 60,
 		"keysSound1Vol": 100,
 		"keysSound2Vol": 50,
+		"keysSound3Vol": 90,
 		"channel0": true,
 		"instrument0": 4,
 		"channel1": true,
@@ -2041,6 +2067,7 @@ async function onloadHandler() {
 	orinayo_strum = document.querySelector('#orinayo-strum');
 	orinayo_pad = document.querySelector('#orinayo-pad');
 	orinayo_reg = document.querySelector('#orinayo-reg');	
+	orinayo_pitch = document.querySelector('#orinayo-pitch');	
 	guitarReverb = document.querySelector("#reverb");
 	
   	keySign = document.getElementById("ll-keysign");	
@@ -2190,6 +2217,7 @@ async function onloadHandler() {
 	microphone = document.querySelector("#microphone");
 	
 	microphone.addEventListener('click', function(event) {
+		stopPlayingLeadInstrument();
 		if (microphone?.checked) setupMicrophone();
 	});	
 
@@ -2247,36 +2275,39 @@ async function onloadHandler() {
 		}
 	});		
 	
-	lyricsCanvas = document.querySelector("#lyrics");
-	lyricsContext = lyricsCanvas.getContext('2d');	
-	
-	const chordpro = document.querySelector("#chordpro");
-	chordpro.src = "https://pade.chat:5443/orinayo/chordpro-pdf-online/";
-	
-	if (!location.origin.startsWith("chrome-extension") && !location.origin.startsWith("https://jus-be.github.io")) {
-		chordpro.src = "/orinayo/chordpro-pdf-online/";
-	}		
+	lyricsCanvas = document.querySelector("#lyrics");	
+	lyricsContext = lyricsCanvas.getContext('2d');		
 	
 	chatViewEle = document.querySelector("#chatview");
 	
 	const gameCanvas = document.querySelector("#gameCanvas");
 	const toggleChat = document.querySelector("#toggle_chat");
-	const settings = document.querySelector("#settings");		
+	const settings = document.querySelector("#settings");	
+
+	function setMenuDefaults() {
+		chatViewEle.style.display = "none";	
+		toggleChat.style.setProperty("--accent-fill-rest", "#0066cc");		
+		
+		board.style.display = "none";
+		pedalBoard.style.setProperty("--accent-fill-rest", "#0066cc");
+			
+		chordpro.style.display = "none";	
+		chordPro.style.setProperty("--accent-fill-rest", "#0066cc");
+			
+		lyricsCanvas.style.display = "none";	
+		showLyrics.style.setProperty("--accent-fill-rest", "#0066cc");			
+	}
 	
 	toggleChat.addEventListener('click', function(event) {	
-		chatViewEle.style.display = "none";	
-		board.style.display = "none";
-		chordpro.style.display = "none";	
-		lyricsCanvas.style.display = "none";		
+		setMenuDefaults();		
 			
 		if (settings.style.display == "none") {
 			settings.style.display = "";
 			mobileBody.style.display = "";
-			gameCanvas.style.display = "";
-			chatViewEle.style.display = "none";
-	
+			gameCanvas.style.display = "";	
 			
 		} else {
+			toggleChat.style.setProperty("--accent-fill-rest", "gray");	
 			chatViewEle.style.display = "";
 			settings.style.display = "none";
 			mobileBody.style.display = "none";
@@ -2285,18 +2316,14 @@ async function onloadHandler() {
 	});
 	
 	pedalBoard.addEventListener('click', function(event) {	
-		chatViewEle.style.display = "none";		
-		board.style.display = "none";
-		chordpro.style.display = "none";	
-		lyricsCanvas.style.display = "none";		
+		setMenuDefaults();		
 			
 		if (settings.style.display == "none") {
 			settings.style.display = "";
-			mobileBody.style.display = "";			
-			board.style.display = "none";
-	
+			mobileBody.style.display = "";				
 			
 		} else if (guitarReverb?.checked) {
+			pedalBoard.style.setProperty("--accent-fill-rest", "gray");				
 			board.style.display = "";
 			settings.style.display = "none";	
 			mobileBody.style.display = "none";
@@ -2306,18 +2333,15 @@ async function onloadHandler() {
 	const chordPro = document.querySelector("#chord_pro");
 	
 	chordPro.addEventListener('click', function(event) {
-		chatViewEle.style.display = "none";			
-		board.style.display = "none";
-		chordpro.style.display = "none";	
-		lyricsCanvas.style.display = "none";		
+		setMenuDefaults();			
 		
 		if (settings.style.display == "none") {
 			settings.style.display = "";
 			mobileBody.style.display = "";	
-			gameCanvas.style.display = "";			
-			chordpro.style.display = "none";		
+			gameCanvas.style.display = "";							
 			
 		} else {
+			chordPro.style.setProperty("--accent-fill-rest", "gray");				
 			chordpro.style.display = "";
 			settings.style.display = "none";	
 			mobileBody.style.display = "none";	
@@ -2328,20 +2352,18 @@ async function onloadHandler() {
 	const showLyrics = document.querySelector("#show_lyrics");
 	lyricsContext.fillStyle = "#000000";	
     lyricsContext.fillRect(0, 0, lyricsCanvas.width, lyricsCanvas.height);	
+	setupLyrics();
 	
 	showLyrics.addEventListener('click', function(event) {
-		chatViewEle.style.display = "none";		
-		board.style.display = "none";
-		chordpro.style.display = "none";	
-		lyricsCanvas.style.display = "none";	
+		setMenuDefaults();		
 		
 		if (settings.style.display == "none") {
 			settings.style.display = "";
 			mobileBody.style.display = "";	
-			gameCanvas.style.display = "";			
-			lyricsCanvas.style.display = "none";	
+			gameCanvas.style.display = "";						
 			
 		} else {
+			showLyrics.style.setProperty("--accent-fill-rest", "gray");					
 			lyricsCanvas.style.display = "";
 			settings.style.display = "none";	
 			mobileBody.style.display = "none";
@@ -2680,68 +2702,152 @@ async function setupMicrophone() {
 	
 	if (microphone.checked) {	
 		console.debug("setupMicrophone");
-		/*	
-		const audioCtx = new AudioContext();	
-		let audioMidiConfig = {tempo: 80,  maxTempo: 720,  resolution: 16,  channel: 2,  sampleRate: 32000};		
-		const midiCreator = new MidiCreator({audioMidiConfig});
 		
-		midiCreator.onPreviewNote = (data) => {
-			//console.debug("midiCreator.onPreviewNote", data);		
-		};	
-		*/
-		const basicPitch = new basic_pitch.BasicPitch("./model/model.json");		
-		const audioCtx = new AudioContext({ sampleRate: 22050 });	
-		const frames = [];
-		const onsets = [];
-		const contours = [];
-  
-		const stream = await navigator.mediaDevices.getUserMedia({audio: true, video: false});
-		console.debug("setupMicrophone", stream);		
-			
-		const inputNode = audioCtx.createMediaStreamSource(stream);
-		await audioCtx.audioWorklet.addModule('/js/audio-midi.js')
-		const processorNode = new AudioWorkletNode(audioCtx, 'audio-midi');
-		
-		processorNode.port.onmessage = async (event) => {
-			//console.debug("processorNode.port.onmessage", event.data.channel);
-			/*
-			let pitchInfo = midiCreator.autoCorrelate(event.data.channel, audioCtx.sampleRate);
-			
-			if (pitchInfo?.pitch > -1) {	
-				//console.debug("processorNode.port.onmessage", pitchInfo);			
-				midiCreator.addNote(pitchInfo.pitch, pitchInfo.velocity);				
+		const stream = await navigator.mediaDevices.getUserMedia({
+			"audio": {
+				"mandatory": {
+					"googEchoCancellation": "false",
+					"googAutoGainControl": "false",
+					"googNoiseSuppression": "false",
+					"googHighpassFilter": "false"
+				},
+				"optional": []
 			}
-			*/
-			
-			/*
-			await basicPitch.evaluateModel(event.data.channel,  (frame, onset, contour) => {
-				frames.push(...frame);
-				onsets.push(...onset);
-				contours.push(...contour);
+		});
+		
+        mediaStreamSource = audioContext.createMediaStreamSource(stream);
+	    analyser = audioContext.createAnalyser();
+	    analyser.fftSize = 2048;
+	    mediaStreamSource.connect( analyser );
+	    updatePitch();		
+	}	
+}
+
+function noteFromPitch( frequency ) {
+	var noteNum = 12 * (Math.log( frequency / 440 )/Math.log(2) );
+	return Math.round( noteNum ) + 69;
+}
+
+function frequencyFromNoteNumber( note ) {
+	return 440 * Math.pow(2,(note-69)/12);
+}
+
+function centsOffFromPitch( frequency, note ) {
+	return Math.floor( 1200 * Math.log( frequency / frequencyFromNoteNumber( note ))/Math.log(2) );
+}
+
+function autoCorrelate( buf, sampleRate ) {
+	// Implements the ACF2+ algorithm
+	var SIZE = buf.length;
+	var rms = 0;
+
+	for (var i=0;i<SIZE;i++) {
+		var val = buf[i];
+		rms += val*val;
+	}
+	rms = Math.sqrt(rms/SIZE);
+	
+	if (rms<0.01) // not enough signal
+		return -1;
+
+	var r1=0, r2=SIZE-1, thres=0.2;
+	
+	for (var i=0; i<SIZE/2; i++)
+		if (Math.abs(buf[i])<thres) { r1=i; break; }
+	
+	for (var i=1; i<SIZE/2; i++)
+		if (Math.abs(buf[SIZE-i])<thres) { r2=SIZE-i; break; }
+
+	buf = buf.slice(r1,r2);
+	SIZE = buf.length;
+
+	var c = new Array(SIZE).fill(0);
+	
+	for (var i=0; i<SIZE; i++)
+		for (var j=0; j<SIZE-i; j++)
+			c[i] = c[i] + buf[j]*buf[j+i];
+
+	var d=0; while (c[d]>c[d+1]) d++;
+	var maxval=-1, maxpos=-1;
+	
+	for (var i=d; i<SIZE; i++) {
+		if (c[i] > maxval) {
+			maxval = c[i];
+			maxpos = i;
+		}
+	}
+	
+	var T0 = maxpos;
+
+	var x1=c[T0-1], x2=c[T0], x3=c[T0+1];
+	a = (x1 + x3 - 2*x2)/2;
+	b = (x3 - x1)/2;
+	if (a) T0 = T0 - b/(2*a);
+
+	return sampleRate/T0;
+}
+
+function updatePitch() {
+	var cycles = new Array;
+	var buflen = 2048;
+	var buf = new Float32Array( buflen );
+	
+	stopPlayingLeadInstrument();	
+	
+	analyser.getFloatTimeDomainData( buf );
+	var ac = autoCorrelate( buf, audioContext.sampleRate );
+
+ 	if (ac == -1) {
+		orinayo_pitch.innerHTML = "Pitch --";
 				
-			  }, (pct) => {
-				console.debug("basicPitch - progress", pct);
-			  });
-
-			const onsetThresh = 0.5, frameThresh = 0.3, minNoteLen = 5, inferOnsets = true, maxFreq = null,  minFreq = null,  melodiaTrick = true, energyTolerance = 11;
-			const notes = basic_pitch.noteFramesToTime(basic_pitch.addPitchBendsToNoteEvents(contours, basic_pitch.outputToNotesPoly(frames, onsets, onsetThresh, frameThresh, minNoteLen, inferOnsets, maxFreq, minFreq, melodiaTrick, energyTolerance)));
+ 	} else {
+	 	const pitch = ac;	
+	 	const note =  noteFromPitch( pitch );
+		const noteString = noteStrings[note%12];
+		const detune = centsOffFromPitch( pitch, note );		
+		
+		if (detune == 0 ) {
+			console.debug("updatePitch - confident", Math.round( pitch ), noteString);	
 			
-			const noteEvents = notes.map((n) => ({
-			  pitch: n.pitchMidi,
-			  duration: n.durationSeconds,
-			  onset: n.startTimeSeconds,
-			  pitchBends: n.pitchBends,
-			  velocity: n.amplitude,
-			}));
+		} else {
+			if (detune < 0) {
+				//console.debug("updatePitch - flat", Math.round( pitch ), noteString, Math.abs( detune ));									
+			} else {
+				//console.debug("updatePitch - sharp", Math.round( pitch ), noteString, Math.abs( detune ));	
+			}				
+		}
 
-			// Sort the note events by onset time and pitch
-			noteEvents.sort((a, b) => a.onset - b.onset || a.pitch - b.pitch);	
-			console.debug("basicPitch - completed", noteEvents);
-			*/
-		};
-  
-		inputNode.connect(processorNode).connect(audioCtx.destination);
-		console.debug("setupMicrophone - processorNode active");
+		if (midiInstrCheckedEle[2]?.checked && activeChord) {		
+			startPlayingLeadInstrument(note, detune);		
+			orinayo_pitch.innerHTML = "Pitch " + noteString;	
+		}			
+	}
+
+	if (microphone.checked) {
+		window.requestAnimationFrame( updatePitch );
+	}
+}
+
+function startPlayingLeadInstrument(note, detune) {
+	//console.debug("startPlayingLeadInstrument", note, detune);
+	// TODO use active chord and key to set midi note
+				
+
+	leadInstrument = smplrLeads[keysSelectedEle3.selectedIndex].instrument;					
+	leadInstrument.output.setVolume(midiVolumeEle[2].value / 100 * 127);
+	
+	const pos = parseInt(guitarPosition.value);		
+	const midiNote = 48 + (pos * 12) + (note % 12);
+	leadInstrument.start({ note: midiNote, velocity: 100 }); 
+	leadInstrument.stopId = midiNote;				
+}
+
+function stopPlayingLeadInstrument() {
+	//console.debug("stopPlayingLeadInstrument", leadInstrument?.stopId);
+	
+	if (leadInstrument?.stopId) {
+		leadInstrument.stop({ stopId: leadInstrument.stopId });	
+		leadInstrument.stopId = null;
 	}	
 }
 
@@ -2754,7 +2860,7 @@ function handleFileContent(event) {
 
 		reader.onload = function(event)	
 		{
-			if (file.name.toLowerCase().endsWith(".mid") || file.name.toLowerCase().endsWith(".sf2") || file.name.toLowerCase().endsWith(".kst") || file.name.toLowerCase().endsWith(".sty") || file.name.toLowerCase().endsWith(".prs") || file.name.toLowerCase().endsWith(".bcs") || file.name.toLowerCase().endsWith(".ac7") || file.name.toLowerCase().endsWith(".sas") || file.name.toLowerCase().endsWith(".bass") || file.name.toLowerCase().endsWith(".drum") || file.name.toLowerCase().endsWith(".chord") || file.name.toLowerCase().endsWith(".keys") || file.name.toLowerCase().endsWith(".pads")) {
+			if (file.name.toLowerCase().endsWith(".mid") || file.name.toLowerCase().endsWith(".sf2") || file.name.toLowerCase().endsWith(".kst") || file.name.toLowerCase().endsWith(".sty") || file.name.toLowerCase().endsWith(".prs") || file.name.toLowerCase().endsWith(".bcs") || file.name.toLowerCase().endsWith(".ac7") || file.name.toLowerCase().endsWith(".sas") || file.name.toLowerCase().endsWith(".bass") || file.name.toLowerCase().endsWith(".drum") || file.name.toLowerCase().endsWith(".chord") || file.name.toLowerCase().endsWith(".keys") || file.name.toLowerCase().endsWith(".pads") || file.name.toLowerCase().endsWith(".leads")) {
 				handleBinaryFile(file.name, event.target.result);
 			}	
 			else
@@ -2782,12 +2888,8 @@ async function handleChordPro(file, data) {
 	const song = chordproParser.parse(body);	// TODO - Implement server-side chord to midi
 	console.debug("handleChordPro", file.name, song);	
 	
-	let url = location.origin + "/orinayo/cp2midi";
-	
-	if (location.origin.startsWith("chrome-extension") || location.origin.startsWith("https://jus-be.github.io")) {
-		url = "https://pade.chat:5443/orinayo/cp2midi";
-	}
-	
+	const parts = JSON.parse(localStorage.getItem("collaboration_server.server_url")).split("/");	
+	const url = "https://" + parts[2] + "/orinayo/cp2midi";	
 	const response = await fetch(url, {method: "POST", body});
 	const blob = await response.blob();	
 	const buffer = await blob.arrayBuffer();
@@ -2808,7 +2910,7 @@ function handleBinaryFile(filename, data) {
 		}
 		else
 			
-		if (filename.toLowerCase().endsWith(".keys") || filename.toLowerCase().endsWith(".pads")) {		
+		if (filename.toLowerCase().endsWith(".keys") || filename.toLowerCase().endsWith(".pads") || filename.toLowerCase().endsWith(".leads")) {		
 			// do nothing. handle on reload
 		}
 		else
@@ -3346,8 +3448,8 @@ function handleNoteOn(note, device, velocity, channel) {
 	
 	if (keysSound2?.checked) 
 	{
-		if (keysSelectedEle2.selectedIndex == 1) {
-			thePad = f[keysSelectedEle2.selectedIndex].instrument;
+		if (keysSelectedEle2.selectedIndex > 0) {
+			thePad = smplrPads[keysSelectedEle2.selectedIndex].instrument;
 		}
 		
 		envelope2 = thePad;
@@ -4028,8 +4130,12 @@ function letsGo(config) {
         alert("Orin Ayo - " + err);
 	  }
 	  
-	  setupUI(config, err);	
-	  startXMPP();  
+	  setupUI(config, err);		  
+	  const enable_xmpp = localStorage.getItem("collaboration_server.enable_xmpp");
+	  
+	  if (enable_xmpp && JSON.parse(enable_xmpp) == true) {
+		startXMPP();  
+	  }
 	  
     }, true);
 }
@@ -4099,7 +4205,8 @@ async function setupUI(config, err) {
 	chordVol = config.chordVol ? config.chordVol : chordVol;
 	keysSound1Vol = config.keysSound1Vol ? config.keysSound1Vol : keysSound1Vol;
 	keysSound2Vol = config.keysSound2Vol ? config.keysSound2Vol : keysSound2Vol;	
-
+	keysSound3Vol = config.keysSound3Vol ? config.keysSound3Vol : keysSound3Vol;	
+	
 	savedDrumVol = drumVol;
 	savedBassVol = bassVol;	
 	savedChordVol = chordVol;
@@ -5554,7 +5661,22 @@ function setupMidiChannels() {
 		if (smplrPads[keysSelectedEle2.selectedIndex]?.sf2) {			
 			smplrPads[keysSelectedEle2.selectedIndex].instrument.loadInstrument(smplrPads[keysSelectedEle2.selectedIndex].name);
 		}
-	});			
+	});		
+
+	keysSelectedEle3 = document.getElementById("midi-channel-2");	
+	keysSelectedEle3.selectedIndex = config["instrument2"];	
+	
+	if (keysSelectedEle3.selectedIndex && smplrLeads[keysSelectedEle3.selectedIndex]?.sf2) {
+		smplrLeads[keysSelectedEle3.selectedIndex].instrument.loadInstrument(smplrLeads[keysSelectedEle3.selectedIndex].name);
+	}
+		
+	keysSelectedEle3.addEventListener("change", function(event) {
+		console.debug("Switching pads SF", smplrLeads[keysSelectedEle3.selectedIndex]);		
+		
+		if (smplrLeads[keysSelectedEle3.selectedIndex]?.sf2) {			
+			smplrLeads[keysSelectedEle3.selectedIndex].instrument.loadInstrument(smplrLeads[keysSelectedEle3.selectedIndex].name);
+		}
+	});		
 	
 	drumCheckedEle = document.getElementById("arr-instrument-16");
 	bassCheckedEle = document.getElementById("arr-instrument-17");
@@ -5595,13 +5717,18 @@ function setupMidiChannels() {
 	
 	midiVolumeEle[0].value = keysSound1Vol;
 	midiVolumeEle[1].value = keysSound2Vol;	
-
+	midiVolumeEle[2].value = keysSound3Vol;	
+	
 	midiVolumeEle[0].addEventListener("input", function(event) {
 		keysSound1Vol = +event.target.value; 			
 	});
 
 	midiVolumeEle[1].addEventListener("input", function(event) {
 		keysSound2Vol = +event.target.value; 			
+	});
+
+	midiVolumeEle[2].addEventListener("input", function(event) {
+		keysSound3Vol = +event.target.value; 			
 	});
 	
 	if (drumKnob) drumKnob.setValue(midiVolumeEle[16].value);
@@ -5717,7 +5844,7 @@ function getArrSequence(arrName, callback) {
 }
 
 function getArrSynth(sf2Name) {
-	if (smplrPads.length < 2) {
+	if (smplrPads.length < 2 || smplrLeads.length < 1) {
 		setTimeout(() => getArrSynth(sf2Name), 1000);	// we need to wait until smplrkeys and smplrPads (ch1 & ch2) are loaded.
 		return;
 	}
@@ -6855,7 +6982,11 @@ function resetArrToA() {
 function stopChord() {			
 	if (pad.axis[STRUM] == STRUM_UP || pad.axis[STRUM] == STRUM_DOWN) {
 
-		if (padsDevice?.stopNote || padsDevice?.name == "soundfont") stopPads();
+		stopPlayingLeadInstrument();
+		
+		if (padsDevice?.stopNote || padsDevice?.name == "soundfont") {
+			stopPads();
+		}
 		
 		if (activeChord) {
 			console.debug("stopChord", pad);
@@ -8354,28 +8485,28 @@ function scheduleSongNote() {
 			if (event.section == 0x08) {
 				 sectionChange = 0; 
 				 changeArrSection(true);	
-				 clearLyrics(lyricsContext);					 
+				 clearLyrics();					 
 			}
 			else 
 				
 			if (event.section == 0x09) {
 				sectionChange = 1;
 				changeArrSection(true);	
-				clearLyrics(lyricsContext);					
+				clearLyrics();					
 			}			
 			else 
 				
 			if (event.section == 0x0A) {
 				sectionChange = 2;
 				changeArrSection(true);	
-				clearLyrics(lyricsContext);					
+				clearLyrics();					
 			}	
 			else 
 				
 			if (event.section == 0x0B) {
 				sectionChange = 3;
 				changeArrSection(true);
-				clearLyrics(lyricsContext);	
+				clearLyrics();	
 			}
 			else 
 				
@@ -8443,7 +8574,7 @@ function scheduleSongNote() {
 			
 		if (event?.sysexType == "start-sequence") {
 			console.debug("scheduleSongNote - start-sequence", event);	
-			clearLyrics(lyricsContext);				
+			clearLyrics();				
 		}
 		else
 			
@@ -8456,7 +8587,7 @@ function scheduleSongNote() {
 			
 			if (event.text == "\n") {
 				console.debug("scheduleSongNote page break");
-				clearLyrics(lyricsContext);					
+				clearLyrics();					
 			
 			} else {
 				console.debug("scheduleSongNote lyrics", event.text);
@@ -8483,7 +8614,7 @@ function scheduleSongNote() {
 						}
 						
 						if (lyricsY > lyricsCanvas.height) {
-							clearLyrics(lyricsContext);				
+							clearLyrics();				
 						}
 
 						lyricsContext.fillStyle = "#ffffff";
@@ -8513,7 +8644,7 @@ function displayChordAndLyrics(chord, lyrics) {
 	}
 
 	if (lyricsY > lyricsCanvas.height) {
-		clearLyrics(lyricsContext);				
+		clearLyrics();				
 	}
 
 	lyricsContext.fillStyle = "#ffffff";
@@ -8522,11 +8653,30 @@ function displayChordAndLyrics(chord, lyrics) {
 	lyricsX = lyricsX + width;	
 }
 
-function clearLyrics(lyricsContext) {
+function clearLyrics() {
 	lyricsX = 2;					
 	lyricsY = 18;
 	lyricsContext.fillStyle = "#000000";
-	lyricsContext.fillRect(0, 0, lyricsCanvas.width, lyricsCanvas.height);		
+	lyricsContext.fillRect(0, 0, lyricsCanvas.width, lyricsCanvas.height);	
+	lyricsContext.drawImage(lyricsImage, 0, 0, lyricsImage.width, lyricsImage.height, 0, 0, lyricsCanvas.width, lyricsCanvas.height);
+}
+
+function setupLyrics() {
+	lyricsImage = new Image;
+
+	lyricsImage.onload = function() {
+		lyricsContext.drawImage(lyricsImage, 0, 0, lyricsImage.width, lyricsImage.height, 0, 0, lyricsCanvas.width, lyricsCanvas.height);				
+	};
+	
+	let wallPaperUrl = localStorage.getItem("songs.wall_paper");
+	
+	if (!wallPaperUrl) {
+		wallPaperUrl = "assets/backgrounds/wheat.png";
+	} else {
+		wallPaperUrl = JSON.parse(wallPaperUrl);
+	}
+	
+	lyricsImage.src = wallPaperUrl;	
 }
 
 function scheduleArrNote() {
@@ -9546,7 +9696,7 @@ async function trashHistory(ev) {
 	ev.stopPropagation();
 	ev.preventDefault();
 
-	const result = confirm(__('Are you sure you want to clear the messages from this conversation?'));
+	const result = confirm(_converse.__('Are you sure you want to clear the messages from this conversation?'));
 
 	if (result === true) {		
 		const toolbar_el = converse.env.utils.ancestor(ev.target, 'converse-chat-toolbar');
@@ -9576,6 +9726,25 @@ function hideChat(ev) {
 	if (roomName && domain) {
 		_converse.api.rooms.open(JSON.parse(roomName) + '@conference.' + JSON.parse(domain), {'bring_to_foreground': true}, true);	
 	}
+}
+
+function loadJS(name) {
+	console.debug("loadJS", name);
+	var head  = document.getElementsByTagName('head')[0];
+	var s1 = document.createElement('script');
+	s1.src = name;
+	s1.async = false;
+	head.appendChild(s1);
+}
+
+function loadCSS(name) {
+	console.debug("loadCSS", name);
+	var head  = document.getElementsByTagName('head')[0];
+	var link  = document.createElement('link');
+	link.rel  = 'stylesheet';
+	link.type = 'text/css';
+	link.href = name;
+	head.appendChild(link);
 }
 
 // -------------------------------------------------------

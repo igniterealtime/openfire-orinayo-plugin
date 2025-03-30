@@ -17,6 +17,8 @@
 package org.ifsoft.orinayo.openfire;
 
 import org.dom4j.Element;
+import org.jivesoftware.openfire.RoutingTable;
+import org.jivesoftware.openfire.SessionManager;
 import org.jivesoftware.openfire.IQHandlerInfo;
 import org.jivesoftware.openfire.handler.IQHandler;
 import org.jivesoftware.openfire.disco.ServerFeaturesProvider;
@@ -57,12 +59,14 @@ public class WhipIQHandler extends IQHandler implements ServerFeaturesProvider
     public static final String NAMESPACE1 = "urn:xmpp:whip:0";
     public static final String NAMESPACE2 = "urn:xmpp:whip:ice:0";	
 	
+    private SessionManager sessionManager;	
+	
 	public void startHandler() {
-
+		sessionManager = SessionManager.getInstance();
 	}
 
 	public void stopHandler() {
-	
+		sessionManager = null;
 	}
 	
     public WhipIQHandler() {
@@ -82,22 +86,46 @@ public class WhipIQHandler extends IQHandler implements ServerFeaturesProvider
 					
 				if (whip != null) {
 					final Element sdp = whip.element("sdp");
-					final String offer = sdp.getText();
 					
 					final Element json = whip.element("json");
+					JSONObject metaData = null;					
 					
 					if (json != null) {
-						final JSONObject metaData = new JSONObject(json.getText());	
-						BroadcastBox.self.metaData.put(id, metaData);				
+						metaData = new JSONObject(json.getText());	
+						BroadcastBox.self.metaData.put(id, metaData);
 					}						
+
+					Message notification = new Message();
+					notification.setFrom(iq.getFrom());						
+					notification.setType(Message.Type.chat);
+					Element childElement = notification.addChildElement(ELEMENT_NAME, NAMESPACE1);
+					childElement.addAttribute("id", id);
+					childElement.addAttribute("jid", iq.getFrom().toString());						
+					childElement.addAttribute("action", sdp == null ? "stop" : "start");						
+
+					if (metaData != null) {						
+						childElement.addElement("json", "urn:xmpp:json:0").setText(metaData.toString());
+					}
 					
-					final String ipaddr = JiveGlobals.getProperty("orinayo.ipaddr", BroadcastBox.getIpAddress());
-					final String tcpPort = JiveGlobals.getProperty("orinayo.port", BroadcastBox.getPort());				
-					final String webUrl = "http://" + ipaddr + ":" + tcpPort + "/api/whip";
+					RoutingTable routingTable = XMPPServer.getInstance().getRoutingTable();
 					
-					final String answer = getSDP(webUrl, id, offer);
-					final Element childElement = reply.setChildElement(ELEMENT_NAME, NAMESPACE1);					
-					childElement.addElement("sdp").setText(answer);
+					for(ClientSession session : routingTable.getClientsRoutes(false)) {
+						notification.setTo(session.getAddress());	
+						session.process(notification);
+					}	
+					
+					XMPPServer.getInstance().getRoutingTable().broadcastPacket(notification, false);						
+					
+					if (sdp != null) {
+						final String ipaddr = JiveGlobals.getProperty("orinayo.ipaddr", BroadcastBox.getIpAddress());
+						final String tcpPort = JiveGlobals.getProperty("orinayo.port", BroadcastBox.getPort());				
+						final String webUrl = "http://" + ipaddr + ":" + tcpPort + "/api/whip";
+						
+						final String offer = sdp.getText();					
+						final String answer = getSDP(webUrl, id, offer);
+						final Element childElement2 = reply.setChildElement(ELEMENT_NAME, NAMESPACE1);					
+						childElement2.addElement("sdp").setText(answer);
+					}
 				}
 				else {
 					reply.setError(new PacketError(PacketError.Condition.not_allowed, PacketError.Type.modify, "request element is missing"));
