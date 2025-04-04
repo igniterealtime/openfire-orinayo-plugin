@@ -3,6 +3,7 @@ const KEYS = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]
 const SECTIONS = ["Arr A", "Arr B", "Arr C", "Arr D", "Intro 1", "End 1"];
 const SECTION_IDS = ["arra", "arrb", "arrc", "arrd"]
 
+const CHROME_EXTN_ID = "oileglflkhgmeabhodafmhahdbfbekdh";
 const STRUM_NEUTRAL =  1.2857;
 const STRUM_UP = -1.0000;
 const STRUM_DOWN = 0.1429;
@@ -44,6 +45,7 @@ var mobileContainer = null;
 var midiInstrCheckedEle = [];
 var midiVolumeEle = [];
 var programChangeEle = null;
+var bluetoothEle = null;
 var drumCheckedEle = null;
 var bassCheckedEle = null;
 var chordCheckedEle = null;
@@ -174,7 +176,7 @@ var tempoCanvas = null;
 var nextBeatTime = 0;
 var playStartTime = 0;
 var songStartTime = 0;
-var audioContext = new AudioContext();
+var audioContext = null
 var unlocked = false;
 var arrangerBeat;
 var current16thNote;        		// What note is currently last scheduled?
@@ -203,8 +205,8 @@ var midiGuitar = null;
 var guitarVolume = 0.25;
 var savedGuitarVolume = 0.25;
 var guitarReverb = null;
-var guitarContext = audioContext; //new AudioContext();
-var guitarSource = guitarContext.destination;
+var guitarContext = null;
+var guitarSource = null;
 var strum1 = "3-2-1-2";
 var strum2 = "[3+2+1]";
 var strum3 = "3-2-4-1-4-2-4";
@@ -239,12 +241,6 @@ var canvas = {
 
 var game = null;
 var pad = {buttons: [], axis: []};
-
-var timeoutId = 0;
-var timeouts = {};
-
-var timeoutWorker = new Worker("./js/timeout-worker.js");
-timeoutWorker.addEventListener("message", myWorkerTimer);
 var textDecoder = null;
 
 var idbKeyval = (function (exports) {
@@ -329,31 +325,6 @@ window.addEventListener("load", onloadHandler);
 window.addEventListener("beforeunload", () => {if (!registration) saveConfig(); });
 window.addEventListener('message', messageHandler);
 window.addEventListener('resize', (event) =>	{setup()});	
-			
-function myWorkerTimer(evt) {
-  var data = evt.data,
-      id = data.id,
-      fn = timeouts[id].fn,
-      args = timeouts[id].args;
-
-  fn.apply(null, args);
-  delete timeouts[id];
-};
-
-function myclearTimeout(id) {
-  timeoutWorker.postMessage({command: "clearTimeout", id: id});
-  delete timeouts[id];
-};
-
-function mysetTimeout(fn, delay) {
-  var args = Array.prototype.slice.call(arguments, 2);
-  timeoutId += 1;
-  delay = delay || 0;
-  var id = timeoutId;
-  timeouts[id] = {fn: fn, args: args};
-  timeoutWorker.postMessage({command: "setTimeout", id: id, timeout: delay});
-  return id;
-};
 
 async function messageHandler(evt) {
 	console.debug("messageHandler", evt.data);	
@@ -381,18 +352,17 @@ async function messageHandler(evt) {
 }
 
 function handleLiberLive(selected) {
-	const bluetooth = document.querySelector("#bluetooth");
-	bluetooth.style.display = selected ? "" : "none";	
+	bluetoothEle.style.display = selected ? "" : "none";	
 	let device;
 	
 	if (selected) 
 	{	
-		if (mobileCheck()) {
+		if (mobileCheck() || mobileViewpoint) {
 			const mobileToolbar = document.getElementById("mobile-toolbar");
-			mobileToolbar.append(bluetooth);			
+			mobileToolbar.append(bluetoothEle);			
 		}
 	
-		bluetooth.addEventListener("click", async (evt) => {
+		bluetoothEle.addEventListener("click", async (evt) => {
 			device = await navigator.bluetooth.requestDevice({filters: [{services: ["000000ff-0000-1000-8000-00805f9b34fb"]}]});
 
 			if (device) {
@@ -411,19 +381,17 @@ function handleLiberLive(selected) {
 }
 
 function handleLavaGenie(selected) {
-	const bluetooth = document.querySelector("#bluetooth");
-	bluetooth.style.display = selected ? "" : "none";	
+	bluetoothEle.style.display = selected ? "" : "none";	
 	let device;
 	
 	if (selected) 
 	{
-		if (mobileCheck()) {
+		if (mobileCheck() || mobileViewpoint) {
 			const mobileToolbar = document.getElementById("mobile-toolbar");
-			mobileToolbar.append(bluetooth);			
+			mobileToolbar.append(bluetoothEle);			
 		}
 		
-		bluetooth.addEventListener("click", async (evt) => {
-			console.debug('handleLavaGenie - click');	
+		bluetoothEle.addEventListener("click", async (evt) => {			
 		
 			device = await navigator.bluetooth.requestDevice({		
 				filters: [{
@@ -598,7 +566,8 @@ async function onLiberLiveClick() {
 async function doLavaGenieSetup(device) {
 	console.debug('doLavaGenieSetup', device);	
 	
-	if (device) {	
+	if (device) {
+		bluetoothEle.style.display = "none";		
 		const ui = document.getElementById("lyrics");
 
 		device.addEventListener('gattserverdisconnected', (event) => {
@@ -932,7 +901,7 @@ async function setLiberLiveChordMappings() {
 	if (!writeCharacteristic) return;
 	
 	const keys = [
-		{level: 10, type: 5},	// Bbadd9	
+		{level: 8, type: 0},	// Ab	
 		{level: 9, type: 3},	// Am7	
 		{level: 7, type: 5},	// Gadd9	(G/B)	
 		{level: 0, type: 5},	// Cadd9	(C/E)
@@ -948,7 +917,7 @@ async function setLiberLiveChordMappings() {
 		{level: 2, type: 1},	// Dm
 		{level: 4, type: 1},	// Em	
 		
-		{level: 8, type: 0},	// Ab
+		{level: 11, type: 0},	// B
 		{level: 9, type: 0},	// A	
 		{level: 7, type: 0},	// G (sus)
 		{level: 0, type: 0},	// C (sus)		
@@ -1377,7 +1346,8 @@ async function getSelectedChatBox() {
 async function doLiberLiveSetup(device) {
 	console.debug('doLiberLiveSetup', device);
 
-	if (device) {	
+	if (device) {
+		bluetoothEle.style.display = "none";
 		const ui = document.getElementById("lyrics");
 
 		device.addEventListener('gattserverdisconnected', (event) => {
@@ -1427,7 +1397,7 @@ async function doLiberLiveSetup(device) {
 					
 					document.getElementById("liberlive").style.display = "";						
 
-					if (mobileCheck()) {
+					if (mobileCheck() || mobileViewpoint) {
 						document.getElementById("extern-device").innerHTML = "LiberLive C1 Guitar";						
 						const controlDevice = document.getElementById("control-device");
 						controlDevice.append(document.getElementById("ll-chord1"));			
@@ -1508,15 +1478,17 @@ async function doLiberLiveSetup(device) {
 						else
 							
 						if (eventData[2] == 8) {
-							pad.buttons[YELLOW] = true;		// 5b			
-							pad.buttons[GREEN] = true;								
-							pad.buttons[RED] = true;							
+							pad.buttons[GREEN] = true;		// 7							
+							pad.buttons[RED] = true;								
+							pad.buttons[YELLOW] = true;				
+							pad.buttons[BLUE] = true;								
 							chordSelected = true;
 						}
 						else
 
 						if (eventData[3] == 4) {
-							pad.buttons[YELLOW] = true;		// 7b			
+							pad.buttons[YELLOW] = true;		// 5b			
+							pad.buttons[GREEN] = true;								
 							pad.buttons[RED] = true;								
 							chordSelected = true;
 						}
@@ -2037,7 +2009,7 @@ function getDefaultData() {
 		"channel17": true,
 		"channel18": true
 	};
-	
+    localStorage.setItem("orin.ayo.config", JSON.stringify(data));	
 	return data;
 }
 
@@ -2047,10 +2019,9 @@ async function onloadHandler() {
 	
 	droneActive = config.droneActive || droneActive;
 	mobileViewpoint = config.mobileViewpoint || mobileViewpoint;
-    navigator.serviceWorker.register("./js/main-sw.js").then(res => console.debug("service worker registered")).catch(err => console.debug("service worker not registered", err));	
-	  				
-	setupPianos(audioContext);
 	
+	navigator.serviceWorker.register("./js/main-sw.js").then(res => console.debug("service worker registered")).catch(err => console.error("service worker not registered", err));	
+	  					
 	let version = "1.0.0";
 	if (!!chrome.runtime?.getManifest) version = chrome.runtime.getManifest().version;
 	document.title = "Orin Ayo | " + version;
@@ -2078,9 +2049,9 @@ async function onloadHandler() {
 	autoFillCheckedEle = document.querySelector("#autoFill");
 	introEndCheckedEle = document.querySelector("#introEnd");	
 	syncStartCheckedEle = document.querySelector("#syncStart");			
-	loadFile = document.querySelector("#load_file")
-	resetApp = document.querySelector("#reset_app")	
-	bluetoothEle = document.querySelector("#bluetooth")		
+	loadFile = document.querySelector("#load_file");
+	resetApp = document.querySelector("#reset_app");	
+	bluetoothEle = document.querySelector("#bluetooth");		
   	tempoEle = document.querySelector("#tempo");
 	
 	const saveReg = document.querySelector("#save_reg");
@@ -2095,7 +2066,7 @@ async function onloadHandler() {
 	const mobileBody = document.getElementById("mobile-body-detail"); 
 	const midiInType = document.getElementById("midiInType");	
 		
-	if (mobileCheck()) {
+	if (mobileCheck() || mobileViewpoint) {
 		desktopContainer.style.display = "none";	
 		
 		mobileContainer.style.display = "";
@@ -2168,20 +2139,25 @@ async function onloadHandler() {
 		controlItems.append(document.getElementById("guitarStrum3"));				
 		controlItems.append(document.getElementById("guitarPosition"));
 		controlItems.append(document.getElementById("guitarIRDef"));
-		controlItems.append(document.getElementById("control-fill"));
-		controlItems.append(document.getElementById("control-intro"));	
-		
+				
 		const controlDevice = document.getElementById("control-device");
 		controlDevice.append(document.getElementById("midiInSel"));	
 		// TODO volume control for keyboard voices 1 & 2
-		//controlDevice.append(document.getElementById("midiPadsSel"));		
+		//controlDevice.append(document.getElementById("midiPadsSel"));	
+		
+		const songItems = document.getElementById("song-items");	
+		songItems.append(document.getElementById("songSequence"));			
+		songItems.append(document.getElementById("control-fill"));
+		songItems.append(document.getElementById("control-intro"));	
+		songItems.append(document.createElement("br"));			
+		songItems.append(document.getElementById("song_control"));	
 
 		const mobileLogo = document.querySelector("#mobile_logo");
 	
 		mobileLogo.addEventListener("click", function() {
 			mobileViewpoint = false;
 			saveConfig();
-			location.reload();
+			reloadApp();
 		});		
 
 	} else {
@@ -2194,14 +2170,15 @@ async function onloadHandler() {
 		desktopLogo.addEventListener("click", function() {
 			mobileViewpoint = true;
 			saveConfig();
-			location.reload();
+			reloadApp();
 		});		
 	}
 	
 	document.body.addEventListener('click', function(event) 	{
-		// TODO
+		// TODO			
+		if (audioContext) audioContext.resume();
 		if (inputDeviceType == "liberlivec1") initLiberLive();
-		if (inputDeviceType == "lavagenie") initLavaGenie();			
+		if (inputDeviceType == "lavagenie") initLavaGenie();		
 	})
 	
 	
@@ -2270,7 +2247,7 @@ async function onloadHandler() {
 		if (arrSequence?.name) {
 			indexedDB.deleteDatabase(arrSequence.name);
 			setTimeout(() => {
-				location.reload();	
+				reloadApp();	
 			}, 1000)				
 		}
 	});		
@@ -2375,7 +2352,9 @@ async function onloadHandler() {
 	const configDlg = document.querySelector("#settings-dialog");
 	
 	configButton.addEventListener("click", function(event) {
-		//ettings.style.display = "none";
+		setMenuDefaults();
+		
+		settings.style.display = "";		
 		configDlg.style.display = "";
 		configDlg.hidden = false;		
 		
@@ -2402,7 +2381,7 @@ async function onloadHandler() {
 			
 	resetApp.addEventListener('click', function(event) {
 		registration = 0;
-		location.reload();
+		reloadApp();
 	});	
 		
 	loadFile.addEventListener('click', function(event) {
@@ -2504,8 +2483,27 @@ async function onloadHandler() {
 	muteChords = document.getElementById("mute-chords");
 	vocalistMode = document.getElementById("vocalist-mode");
 	
-	getStreamDeck();
-	letsGo(config);
+	try {
+		const enableStreamDeck = localStorage.getItem("devices.enable_streamdeck");
+		  
+		if (enableStreamDeck && JSON.parse(enableStreamDeck) == true) {	
+			getStreamDeck();
+			console.debug("stream deck enabled");			
+		}
+		
+	} catch (e) {
+		console.error("stream deck fail", e);
+	}
+			
+	audioContext = new AudioContext();
+	guitarContext = audioContext;
+	guitarSource = guitarContext.destination;
+	setupPianos(audioContext);		
+	letsGo(config);	
+}
+
+function reloadApp() {
+	location.reload();	
 }
 
 async function getStreamDeck() {
@@ -2939,7 +2937,7 @@ function handleBinaryFile(filename, data) {
 		}
 
 		saveConfig();
-		location.reload();			
+		reloadApp();			
 		
 	}).catch(function (err) {
 		console.error('handleBinaryFile set failed!', err)
@@ -3932,7 +3930,7 @@ function updateStatus() {
 				} 
 				else
 					
-				if (i == 10) 
+				if (i == 10) 	// Lower keys
 				{
 					if (pad.buttons[GREEN]) {
 						pad.buttons[LOGO] = touched;
@@ -3971,24 +3969,75 @@ function updateStatus() {
   
 	if (guitar) {				
 		//console.debug("using guitar" + guitar.id, guitar);
-		
+				
 		for (var i=0; i<guitar.buttons.length; i++) 
 		{
 			var val = guitar.buttons[i];
-			var touched = false;							
-		  
+			var touched = false;
+			
 			if (typeof(val) == "object") 
 			{	  			
 				if ('touched' in val) {
 				  touched = val.touched;
 				}			
-			}
+			}			  
+			
+			if (mobileCheck()) {				
+				let j = i;
+				
+				if (i == 0) j = YELLOW;
+				if (i == 1) j = GREEN;	
+				if (i == 2) j = BLUE;					
+				if (i == 3) j = ORANGE;	
+				
+				if (i == 7) j = START;			
+				if (i == 6) j = STARPOWER;								
+				if (i == 16) j = LOGO;	
+
+				if (i == 12) j = 112;				
+				if (i == 13) j = 113;				
+				if (i == 14) j = 114;				
+				if (i == 15) j = 115;				
+
+				if (pad.buttons[j] != touched) {
+					console.debug("button " + j, touched);	
+					
+					if (i == 12 || i == 13 || i == 14 || i == 15) { // stum action	
+
+						if (touched) {
+							pad.axis[STRUM] = (i == 12 ? STRUM_UP : (i == 13 ? STRUM_DOWN : (i == 14 ? STRUM_LEFT : STRUM_RIGHT)));
+							updated = true;	
+							
+							if (!pad.buttons[YELLOW] && !pad.buttons[GREEN]	&& !pad.buttons[BLUE] && !pad.buttons[ORANGE] && pad.axis[STRUM] != STRUM_LEFT && pad.axis[STRUM] != STRUM_RIGHT ) {
+								pad.buttons[RED] = true;
+							} else {
+								pad.buttons[RED] = false;
+							}
+						}
+
+						pad.buttons[j] = touched;							
+					} 
+					else
+
+					if (i == 6 || i == 7 || i == 16) {			// style action
+						updated = true;
+						pad.buttons[j] = touched;							
+					}					
+					else
+						
+					if (i == 0 || i == 1 || i == 2 || i == 3) {
+						pad.buttons[j] = touched;						
+					}													
+				}				
+				
+			} else {
 		  
-			if (pad.buttons[i] != touched) {
-				//console.debug("button " + i, touched);									
-				pad.buttons[i] = touched;
-				updated = true;
-			}			
+				if (pad.buttons[i] != touched) {
+					//console.debug("button " + i, touched);									
+					pad.buttons[i] = touched;
+					updated = true;
+				}	
+			}				
 		}
 		
 		if (guitar.axes.length > STRUM) 
@@ -4098,7 +4147,16 @@ function updateStatus() {
 			pad.buttons[LOGO] = false;
 			pad.axis[TOUCH] = 0;
 		}
-		else
+		else	
+
+		if (mobileCheck()) {
+			pad.buttons[GREEN] = false;
+			pad.buttons[RED] = false;
+			pad.buttons[YELLOW] = false;
+			pad.buttons[BLUE] = false;
+			pad.buttons[ORANGE] = false;
+		}
+		else	
 			
 		if (riffMasterPS) {	
 			pad.buttons[LOGO] = false;		
@@ -4122,14 +4180,10 @@ function handleSongMode() {
 }
 
 function letsGo(config) {
-	console.debug("letsGo", config, WebMidi);		
+	console.debug("letsGo", config, WebMidi);
+	playButton.innerHTML = "On";	
 	
-    WebMidi.enable(async function (err)
-    {
-      if (err) {
-        alert("Orin Ayo - " + err);
-	  }
-	  
+    WebMidi.enable(async function (err) {	  
 	  setupUI(config, err);		  
 	  const enable_xmpp = localStorage.getItem("collaboration_server.enable_xmpp");
 	  
@@ -4682,15 +4736,17 @@ async function setupUI(config, err) {
 		initLavaGenie();
 		handleLavaGenie(inputDeviceType == "lavagenie");		
 	}	
+
+	midiInType.addEventListener("click", function()
+	{
+		bluetoothEle.style.display = (midiInType.value == "liberlivec1" || midiInType.value == "lavagenie") ? "" : "none";
+	});
 	
 	midiInType.addEventListener("change", function()
 	{
 		inputDeviceType = midiInType.value;
 		console.debug("selected midi device type", inputDeviceType, midiInType.value);				
-		saveConfig();
-		
-		const bluetooth = document.querySelector("#bluetooth");
-		bluetooth.style.display = "none";			
+		saveConfig();			
 		
 		if (inputDeviceType == "liberlivec1") {
 			handleLiberLive(inputDeviceType == "liberlivec1");
@@ -4890,7 +4946,7 @@ async function setupUI(config, err) {
 			
 	for (var i=0; i<drum_loops.length; i++) {
 		const drumLoop = drum_loops[i];
-		if (drumLoop.startsWith("extra") && location.protocol == "chrome-extension:") continue;
+		if (drumLoop.startsWith("extra") && (location.protocol == "chrome-extension:" && chrome.runtime.id != CHROME_EXTN_ID)) continue;
 				
 		let selectedDrum = false;	
 		const loopData = drumLoop.substring(drumLoop.lastIndexOf("/") + 1).replace(".drum", "");
@@ -4911,7 +4967,7 @@ async function setupUI(config, err) {
 	
 	for (var i=0; i<bass_loops.length; i++) {
 		const bassLoop = bass_loops[i];
-		if (bassLoop.startsWith("extra") && location.protocol == "chrome-extension:") continue;
+		if (bassLoop.startsWith("extra") && (location.protocol == "chrome-extension:" && chrome.runtime.id != CHROME_EXTN_ID)) continue;
 		
 		let selectedBass = false;	
 		const loopData = bassLoop.substring(bassLoop.lastIndexOf("/") + 1).replace(".bass", "");
@@ -4932,7 +4988,7 @@ async function setupUI(config, err) {
 	
 	for (var i=0; i<chord_loops.length; i++) {
 		const chordLoop = chord_loops[i];
-		if (chordLoop.startsWith("extra") && location.protocol == "chrome-extension:") continue;
+		if (chordLoop.startsWith("extra") && (location.protocol == "chrome-extension:" && chrome.runtime.id != CHROME_EXTN_ID)) continue;
 		
 		let selectedChord = false;	
 		const loopData = chordLoop.substring(chordLoop.lastIndexOf("/") + 1).replace(".chord", "");
@@ -4953,7 +5009,7 @@ async function setupUI(config, err) {
 	
 	for (var i=0; i<riff_loops.length; i++) {
 		const riffLoop = riff_loops[i];
-		if (riffLoop.startsWith("extra") && location.protocol == "chrome-extension:") continue;
+		if (riffLoop.startsWith("extra") && (location.protocol == "chrome-extension:" && chrome.runtime.id != CHROME_EXTN_ID)) continue;
 		
 		let selectedRiff = false;	
 		const loopData = riffLoop.substring(riffLoop.lastIndexOf("/") + 1).replace(".riff", "");
@@ -5682,7 +5738,7 @@ function setupMidiChannels() {
 	bassCheckedEle = document.getElementById("arr-instrument-17");
 	chordCheckedEle = document.getElementById("arr-instrument-18");
 	
-	if (mobileCheck()) {
+	if (mobileCheck() || mobileViewpoint) {
 		const chordMute = document.getElementById("chord-mute");
 		chordMute.append(chordCheckedEle);
 		
@@ -5694,15 +5750,15 @@ function setupMidiChannels() {
 	}
 	
 	drumCheckedEle.addEventListener("click", function(event) {
-		pressFootSwitch(7);
+		pressFootSwitch(7, true);
 	});
 
 	bassCheckedEle.addEventListener("click", function(event) {
-		pressFootSwitch(8);		
+		pressFootSwitch(8, true);		
 	});
 	
 	chordCheckedEle.addEventListener("click", function(event) {
-		pressFootSwitch(9);		
+		pressFootSwitch(9, true);		
 	});	
 	
 	for (let i=0; i<19; i++) {
@@ -6814,48 +6870,63 @@ function sendKetronSysex(code) {
 	}	
 }
 
-function pressFootSwitch(code) {
+function pressFootSwitch(code, noupdate) {
 	console.debug("pressFootSwitch", code)	
 
 	if (arranger == "sff") 
 	{				
 		if (code == 6) {	// drum toggle
 			const instrumentNode = midiInstrCheckedEle[9];		
-			instrumentNode.checked = !instrumentNode.checked;			
+			if (!noupdate) instrumentNode.checked = !instrumentNode.checked;			
 		}
 		else
 			
 		if (code == 7) {	// drum toggle
 			const instrumentNode = midiInstrCheckedEle[10];		
-			instrumentNode.checked = !instrumentNode.checked;			
+			if (!noupdate) instrumentNode.checked = !instrumentNode.checked;			
 		}
 		
 		if (code == 8 || code == 9) {	// chord toggle
 			const chord1 = midiInstrCheckedEle[11];		
-			chord1.checked = !chord1.checked;
+			if (!noupdate) chord1.checked = !chord1.checked;
 
 			const chord2 = midiInstrCheckedEle[12];		
-			chord2.checked = !chord2.checked;
+			if (!noupdate) chord2.checked = !chord2.checked;
 
 			const chord3 = midiInstrCheckedEle[13];		
-			chord3.checked = !chord3.checked;
+			if (!noupdate) chord3.checked = !chord3.checked;
 
 			const chord4 = midiInstrCheckedEle[14];		
-			chord4.checked = !chord4.checked;
+			if (!noupdate) chord4.checked = !chord4.checked;
 
 			const chord5 = midiInstrCheckedEle[15];		
-			chord5.checked = !chord5.checked;			
+			if (!noupdate) chord5.checked = !chord5.checked;			
 		}		
 		
 	} 	
 	else 
 		
 	if (arranger == "webaudio" && realInstrument) {
-		if (code == 7 && drumLoop?.gainNode) drumLoop.muteToggle();
-		if (code == 6 && chordLoop?.gainNode) chordLoop.muteToggle();		
-		if (code == 6 && bassLoop?.gainNode) bassLoop.muteToggle();	
-		if (code == 9 && chordLoop?.gainNode) chordLoop.muteToggle();		
-		if (code == 8 && bassLoop?.gainNode) bassLoop.muteToggle();		
+		
+		if (code == 7 && drumLoop?.gainNode) {		
+			if (!noupdate) drumCheckedEle.checked = !drumCheckedEle.checked;
+			drumLoop.muteToggle();
+			if (input?.name == "X-TOUCH MINI") setXTouchSpeaker(encoder, !drumCheckedEle.checked ? "flash": "off");			
+		}
+		else
+
+		if ((code == 6 || code == 8) && bassLoop?.gainNode) {		
+			if (!noupdate) bassCheckedEle.checked = !bassCheckedEle.checked;	
+			bassLoop.muteToggle();	
+			if (input?.name == "X-TOUCH MINI") setXTouchSpeaker(encoder, !bassCheckedEle.checked ? "flash": "off");		
+		}
+		else
+
+		if ((code == 6 || code == 9) && chordLoop?.gainNode) {		
+			if (!noupdate) chordCheckedEle.checked = !chordCheckedEle.checked;	
+			chordLoop.muteToggle();
+			if (input?.name == "X-TOUCH MINI") setXTouchSpeaker(encoder, !chordCheckedEle.checked ? "flash": "off");		
+		}			
 	}
 	else	
 		
@@ -7589,7 +7660,7 @@ function toggleStartStop() {
 		
 	if (((midiRealGuitar || guitarName != "none") && realGuitarStyle != "none" && window[realGuitarStyle]) || songSequence || (arrSequence && arranger == "sff")) 
 	{
-		if (playButton.innerText != "On") {
+		if (playButton.innerText != "On" && playButton.innerText != "Off") {
 			startStopSequencer();
 
 			if (songSequence || arranger == "sff") {
@@ -9225,7 +9296,7 @@ function fetchLoopSample(url) {
 	console.debug("fetchLoopSample", url);
 	
 	if (url.startsWith("assets") || url.startsWith("extra")) 	{
-		fetch(url, {cache: "force-cache"})
+		fetch(url)
 			.then(response => response.arrayBuffer())
 			.then(buffer => this.audioContext.decodeAudioData(buffer))
 			.then(sample => {
@@ -9343,7 +9414,7 @@ function recallRegistration(slot) {
 	if (data) {
 		registration = parseInt(slot);		
 		localStorage.setItem("orin.ayo.config", data);
-		setTimeout(() => location.reload(), 500 );		
+		setTimeout(() => reloadApp(), 500 );		
 	}
 
 }
@@ -9372,14 +9443,13 @@ function arraysEqual(a, b) {
 }
 
 function mobileCheck() {
-	if (mobileViewpoint) return true;
 	let check = false;
 	(function(a){if(/(android|bb\d+|meego).+mobile|avantgo|bada\/|blackberry|blazer|compal|elaine|fennec|hiptop|iemobile|ip(hone|od)|iris|kindle|lge |maemo|midp|mmp|mobile.+firefox|netfront|opera m(ob|in)i|palm( os)?|phone|p(ixi|re)\/|plucker|pocket|psp|series(4|6)0|symbian|treo|up\.(browser|link)|vodafone|wap|windows ce|xda|xiino/i.test(a)||/1207|6310|6590|3gso|4thp|50[1-6]i|770s|802s|a wa|abac|ac(er|oo|s\-)|ai(ko|rn)|al(av|ca|co)|amoi|an(ex|ny|yw)|aptu|ar(ch|go)|as(te|us)|attw|au(di|\-m|r |s )|avan|be(ck|ll|nq)|bi(lb|rd)|bl(ac|az)|br(e|v)w|bumb|bw\-(n|u)|c55\/|capi|ccwa|cdm\-|cell|chtm|cldc|cmd\-|co(mp|nd)|craw|da(it|ll|ng)|dbte|dc\-s|devi|dica|dmob|do(c|p)o|ds(12|\-d)|el(49|ai)|em(l2|ul)|er(ic|k0)|esl8|ez([4-7]0|os|wa|ze)|fetc|fly(\-|_)|g1 u|g560|gene|gf\-5|g\-mo|go(\.w|od)|gr(ad|un)|haie|hcit|hd\-(m|p|t)|hei\-|hi(pt|ta)|hp( i|ip)|hs\-c|ht(c(\-| |_|a|g|p|s|t)|tp)|hu(aw|tc)|i\-(20|go|ma)|i230|iac( |\-|\/)|ibro|idea|ig01|ikom|im1k|inno|ipaq|iris|ja(t|v)a|jbro|jemu|jigs|kddi|keji|kgt( |\/)|klon|kpt |kwc\-|kyo(c|k)|le(no|xi)|lg( g|\/(k|l|u)|50|54|\-[a-w])|libw|lynx|m1\-w|m3ga|m50\/|ma(te|ui|xo)|mc(01|21|ca)|m\-cr|me(rc|ri)|mi(o8|oa|ts)|mmef|mo(01|02|bi|de|do|t(\-| |o|v)|zz)|mt(50|p1|v )|mwbp|mywa|n10[0-2]|n20[2-3]|n30(0|2)|n50(0|2|5)|n7(0(0|1)|10)|ne((c|m)\-|on|tf|wf|wg|wt)|nok(6|i)|nzph|o2im|op(ti|wv)|oran|owg1|p800|pan(a|d|t)|pdxg|pg(13|\-([1-8]|c))|phil|pire|pl(ay|uc)|pn\-2|po(ck|rt|se)|prox|psio|pt\-g|qa\-a|qc(07|12|21|32|60|\-[2-7]|i\-)|qtek|r380|r600|raks|rim9|ro(ve|zo)|s55\/|sa(ge|ma|mm|ms|ny|va)|sc(01|h\-|oo|p\-)|sdk\/|se(c(\-|0|1)|47|mc|nd|ri)|sgh\-|shar|sie(\-|m)|sk\-0|sl(45|id)|sm(al|ar|b3|it|t5)|so(ft|ny)|sp(01|h\-|v\-|v )|sy(01|mb)|t2(18|50)|t6(00|10|18)|ta(gt|lk)|tcl\-|tdg\-|tel(i|m)|tim\-|t\-mo|to(pl|sh)|ts(70|m\-|m3|m5)|tx\-9|up(\.b|g1|si)|utst|v400|v750|veri|vi(rg|te)|vk(40|5[0-3]|\-v)|vm40|voda|vulc|vx(52|53|60|61|70|80|81|83|85|98)|w3c(\-| )|webc|whit|wi(g |nc|nw)|wmlb|wonu|x700|yas\-|your|zeto|zte\-/i.test(a.substr(0,4))) check = true;})(navigator.userAgent||navigator.vendor||window.opera);
 	return check;
 };
 
 function createKnob(id, value, valMin, valMax, color) {
-	const knob = pureknob.createKnob(200, 200);
+	const knob = pureknob.createKnob(125, 125);
 
 	knob.setProperty('angleStart', -0.75 * Math.PI);
 	knob.setProperty('angleEnd', 0.75 * Math.PI);
