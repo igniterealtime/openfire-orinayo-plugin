@@ -50,9 +50,10 @@
 				
 				window.connection.sendIQ($iq({type: 'set', to: window.connection.domain}).c('whip', {xmlns: 'urn:xmpp:whip:0'}).c('sdp', offer.sdp), 
 					function (res)  {
+						const uri = res.querySelector('whip').getAttribute("uri");
 						const answer = res.querySelector('sdp').innerHTML;
 						peerConnection.setRemoteDescription({sdp: answer,  type: 'answer'});	
-						console.debug('whip answer', answer);			
+						console.debug('whip answer', uri, answer);			
 
 					}, function (err) {
 						console.warn('whip failed', err);

@@ -47,6 +47,7 @@ import java.util.concurrent.*;
 
 import net.sf.json.*;
 
+
 /**
  * custom IQ handler for WHIP
  */
@@ -82,7 +83,8 @@ public class WhipIQHandler extends IQHandler implements ServerFeaturesProvider
 			try {
 				Log.debug("Whip handleIQ \n" + iq.toString());
 				final Element whip = iq.getChildElement();
-				final String id = iq.getFrom().getNode();
+				final String streamKey = iq.getFrom().getNode() + "-" + iq.getID();
+				final String uri = "whep:" + streamKey;
 					
 				if (whip != null) {
 					final Element sdp = whip.element("sdp");
@@ -92,43 +94,31 @@ public class WhipIQHandler extends IQHandler implements ServerFeaturesProvider
 					
 					if (json != null) {
 						metaData = new JSONObject(json.getText());	
-						BroadcastBox.self.metaData.put(id, metaData);
-					}						
-
-					Message notification = new Message();
-					notification.setFrom(iq.getFrom());						
-					notification.setType(Message.Type.chat);
-					Element childElement = notification.addChildElement(ELEMENT_NAME, NAMESPACE1);
-					childElement.addAttribute("id", id);
-					childElement.addAttribute("jid", iq.getFrom().toString());						
-					childElement.addAttribute("action", sdp == null ? "stop" : "start");						
-
-					if (metaData != null) {						
-						childElement.addElement("json", "urn:xmpp:json:0").setText(metaData.toString());
-					}
-					
-					RoutingTable routingTable = XMPPServer.getInstance().getRoutingTable();
-					
-					for(ClientSession session : routingTable.getClientsRoutes(false)) {
-						notification.setTo(session.getAddress());	
-						session.process(notification);
-					}	
-					
-					XMPPServer.getInstance().getRoutingTable().broadcastPacket(notification, false);						
+						BroadcastBox.self.metaData.put(uri, metaData);
+					}							
 					
 					if (sdp != null) {
 						final String ipaddr = JiveGlobals.getProperty("orinayo.ipaddr", BroadcastBox.getIpAddress());
 						final String tcpPort = JiveGlobals.getProperty("orinayo.port", BroadcastBox.getPort());				
 						final String webUrl = "http://" + ipaddr + ":" + tcpPort + "/api/whip";
 						
-						final String offer = sdp.getText();					
-						final String answer = getSDP(webUrl, id, offer);
-						final Element childElement2 = reply.setChildElement(ELEMENT_NAME, NAMESPACE1);					
-						childElement2.addElement("sdp").setText(answer);
+						final String offer = sdp.getText();											
+						final String answer = getSDP(webUrl, uri, offer);
+						
+						if (answer != null) {
+							final Element childElement = reply.setChildElement(ELEMENT_NAME, NAMESPACE1);
+							childElement.addAttribute("uri", uri);						
+							childElement.addElement("sdp").setText(answer);
+						} else {
+							reply.setError(new PacketError(PacketError.Condition.not_allowed, PacketError.Type.modify, "Service not available"));							
+						}
 					}
+					else {
+						reply.setError(new PacketError(PacketError.Condition.not_allowed, PacketError.Type.modify, "SDP element is missing"));
+					}					
 				}
 				else {
-					reply.setError(new PacketError(PacketError.Condition.not_allowed, PacketError.Type.modify, "request element is missing"));
+					reply.setError(new PacketError(PacketError.Condition.not_allowed, PacketError.Type.modify, "WHIP element is missing"));
 				}
 				return reply;
 
@@ -160,7 +150,7 @@ public class WhipIQHandler extends IQHandler implements ServerFeaturesProvider
 		HttpURLConnection conn;
 		BufferedReader rd;
 		String line;
-		String accumulator = "";
+		String accumulator = null;
 		StringBuilder result = new StringBuilder();
 		String authHeaderValue = "Bearer " + streamKey;
 		
@@ -182,6 +172,7 @@ public class WhipIQHandler extends IQHandler implements ServerFeaturesProvider
 			
 			conn.getOutputStream().write(sdp.getBytes(StandardCharsets.UTF_8));
 			rd = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+			accumulator = "";
 			
 			while ((line = rd.readLine()) != null) {
 				accumulator = accumulator + line + "\n";				

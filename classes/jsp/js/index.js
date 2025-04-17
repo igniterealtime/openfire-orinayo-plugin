@@ -1273,38 +1273,37 @@ function startXMPP() {
 
 		
 	const options = {
-		persistent_store: "localStorage", // TODO location.origin.startsWith("chrome-extension") ? 'BrowserExtLocal' : 'IndexedDB', 				
-		discover_connection_methods: false,
-		clear_cache_on_logout: true,
-		assets_path: "./dist/",	
-		sounds_path: "./dist/sounds/",	
-		notification_icon: "./assets/icon_128.png",
-		allow_logout: false, 
-		allow_muc_invitations: false,                                          
 		allow_contact_requests: false, 
+		allow_logout: false, 
+		allow_muc_invitations: false,  
+		assets_path: "./dist/",	
 		authentication: 'login',
-		auto_reconnect: true,			
+		auto_join_on_invite: true,		
+		auto_join_rooms: [roomName + '@conference.' + domain],
 		auto_login: true,
-		auto_join_rooms: [
-			roomName + '@conference.' + domain,
-		],
-		websocket_url: conURI, 
-		jid: username + "@" + domain,
-		nickname: username,
-		password: password,
-		keepalive: true,
+		auto_reconnect: true,			
+		clear_cache_on_logout: true,
+		discover_connection_methods: false,
 		hide_muc_server: true, 
+		hide_offline_users: true,		
+		jid: username + "@" + domain,
+		keepalive: true,
+		loglevel: 'debug',
+		muc_show_info_messages: [], //mucShowInfoMessages,
+		muc_show_logs_before_join: true,	
+		nickname: username,
+		notification_icon: "./assets/icon_128.png",
+		password: password,
+		persistent_store: "localStorage", // TODO location.origin.startsWith("chrome-extension") ? 'BrowserExtLocal' : 'IndexedDB', 				
 		play_sounds: false,
 		show_controlbox_by_default: false,	
 		show_desktop_notifications: true,	
-		hide_offline_users: true,		
-		strict_plugin_dependencies: false,	
 		singleton: true,
+		sounds_path: "./dist/sounds/",	
+		strict_plugin_dependencies: false,	
+		theme: 'cyberpunk',
 		view_mode: 'embedded',	
-		theme: 'dracula',
-		muc_show_logs_before_join: true,	
-		muc_show_info_messages: [], //mucShowInfoMessages,
-		loglevel: 'info',
+		websocket_url: conURI, 
 		whitelisted_plugins: whitelistedPlugins					
 	};
 	console.debug("startXMPP - converse options", options);
@@ -4028,7 +4027,34 @@ function updateStatus() {
 					if (i == 0 || i == 1 || i == 2 || i == 3) {
 						pad.buttons[j] = touched;						
 					}													
-				}				
+				}	
+
+				// TODO debug axis[3] messages
+				
+				/*if (guitar.axis[3].toFixed(4) == -0.7 || guitar.axis[3].toFixed(4) == -0.5) {
+					pad.axis[TOUCH] = -0.7;	
+					updated = true;
+				}
+				
+				if (guitar.axis[3].toFixed(4) == -0.3 || guitar.axis[3].toFixed(4) == -0.4) {
+					pad.axis[TOUCH] = -0.4; 	
+					updated = true;					
+				}
+				
+				if (guitar.axis[3].toFixed(4) == 0.1 || guitar.axis[3].toFixed(4) == 0.2) {
+					pad.axis[TOUCH] = 0.2;	
+					updated = true;					
+				}
+				
+				if (guitar.axis[3].toFixed(4) == 0.4 || guitar.axis[3].toFixed(4) == 0.5) {
+					pad.axis[TOUCH] = 0.4; 				
+					updated = true;
+				}
+					
+				if (guitar.axis[3].toFixed(4) == 0.9 || guitar.axis[3].toFixed(4) == 1.0) {
+					pad.axis[TOUCH] = 1.0;					
+					updated = true;
+				}*/
 				
 			} else {
 		  
@@ -4037,28 +4063,29 @@ function updateStatus() {
 					pad.buttons[i] = touched;
 					updated = true;
 				}	
-			}				
-		}
+				
 		
-		if (guitar.axes.length > STRUM) 
-		{			
-			if (pad.axis[STRUM] != guitar.axes[STRUM].toFixed(4)) {
-				//console.debug("strum", guitar.axes[STRUM].toFixed(4));							
-				pad.axis[STRUM] = guitar.axes[STRUM].toFixed(4);
-				updated = true;
-			}
+				if (guitar.axes.length > STRUM) 
+				{			
+					if (pad.axis[STRUM] != guitar.axes[STRUM].toFixed(4)) {
+						//console.debug("strum", guitar.axes[STRUM].toFixed(4));							
+						pad.axis[STRUM] = guitar.axes[STRUM].toFixed(4);
+						updated = true;
+					}
 
-			if (pad.axis[TOUCH] != guitar.axes[TOUCH].toFixed(1)) {
-				//console.debug("touch", guitar.axes[TOUCH].toFixed(1));							
-				pad.axis[TOUCH] = guitar.axes[TOUCH].toFixed(1);
-				updated = true;				
-			}	
+					if (pad.axis[TOUCH] != guitar.axes[TOUCH].toFixed(1)) {
+						//console.debug("touch", guitar.axes[TOUCH].toFixed(1));							
+						pad.axis[TOUCH] = guitar.axes[TOUCH].toFixed(1);
+						updated = true;				
+					}	
 
-			if (pad.axis[WHAMMY] != guitar.axes[WHAMMY].toFixed(1)) {
-				//console.debug("whammy", guitar.axes[WHAMMY].toFixed(1));							
-				pad.axis[WHAMMY] = guitar.axes[WHAMMY].toFixed(1);
-				updated = true;				
-			}			
+					if (pad.axis[WHAMMY] != guitar.axes[WHAMMY].toFixed(1)) {
+						//console.debug("whammy", guitar.axes[WHAMMY].toFixed(1));							
+						pad.axis[WHAMMY] = guitar.axes[WHAMMY].toFixed(1);
+						updated = true;				
+					}			
+				}				
+			}				
 		}				
 	}
 	else
@@ -4135,7 +4162,8 @@ function updateStatus() {
 		}				
 	}	
 		
-	if (updated) {
+	if (updated) 
+	{
 		if (styleStarted && songSequence) {
 			handleSongMode();
 		} else {
@@ -4155,6 +4183,7 @@ function updateStatus() {
 			pad.buttons[YELLOW] = false;
 			pad.buttons[BLUE] = false;
 			pad.buttons[ORANGE] = false;
+			pad.axis[STRUM] = STRUM_NEUTRAL;
 		}
 		else	
 			
@@ -4624,6 +4653,8 @@ async function setupUI(config, err) {
 	guitarType.options[6] = new Option("Electric Bass Guitar (pick)", "0341_Aspirin_sf2_file", config.guitarName == "0341_Aspirin_sf2_file", config.guitarName == "0341_Aspirin_sf2_file");	
 	guitarType.options[7] = new Option("Electric Guitar FSBS", "0270_EGuitar_FSBS_SF2_file", config.guitarName == "0270_EGuitar_FSBS_SF2_file", config.guitarName == "0270_EGuitar_FSBS_SF2_file");	
 	guitarType.options[8] = new Option("JC Live", "0260_JCLive_sf2_file", config.guitarName == "0260_JCLive_sf2_file", config.guitarName == "0260_JCLive_sf2_file");	
+	guitarType.options[9] = new Option("Electric Guitar", "0270_Aspirin_sf2_file", config.guitarName == "0270_Aspirin_sf2_file", config.guitarName == "0270_Aspirin_sf2_file");	
+	guitarType.options[10] = new Option("Muted Electric", "0280_JCLive_sf2_file", config.guitarName == "0280_JCLive_sf2_file", config.guitarName == "0280_JCLive_sf2_file");	
 
 	guitarType.addEventListener("change", function() {
 		guitarStrum[1].style.display = "none";		
@@ -6425,7 +6456,7 @@ function playChord(chord, root, type, bass) {
 	console.debug("playChord", chord, root, type, bass);
 
 	const guitarPos = guitarPosition.selectedIndex;	
-	const guitarDuration = 240 / tempo; 
+	const guitarDuration = 960 / tempo; 
 	const bassNote = (chord.length == 4 ? chord[0] : chord[0] - 12);
 	const rootNote = (chord.length == 4 ? chord[0] : chord[0] - 12) + (guitarPos * 12);	
 	const firstNote = (chord.length == 4 ? chord[1] : chord[0]);	
@@ -6438,9 +6469,10 @@ function playChord(chord, root, type, bass) {
 	if (!activeChord) {
 		lastChord = firstChord;	
 		firstChord = chord;
+		const autoStrumCode = autoStrumUpDown();
 		
 		if (inputDeviceType == "lavagenie" || inputDeviceType == "keyboard" || songSequence?.data?.music) {
-			pad.axis[STRUM] = autoStrumUpDown();
+			pad.axis[STRUM] = autoStrumCode;
 		}
 			
 		const arrChord = (firstChord.length == 4 ? firstChord[1] : firstChord[0]) % 12;
@@ -6456,8 +6488,22 @@ function playChord(chord, root, type, bass) {
 			if (pad.axis[STRUM] == STRUM_UP || pad.axis[STRUM] == STRUM_DOWN)	
 			{
 				if (padsMode == 1) {
-					if (pad.axis[STRUM] == STRUM_UP) player.queueStrumUp(guitarContext, guitarSource, midiGuitar, 0, getPitches(), guitarDuration, guitarVolume, undefined, guitarReverb.checked);
-					if (pad.axis[STRUM] == STRUM_DOWN) player.queueStrumDown(guitarContext, guitarSource, midiGuitar, 0, getPitches(), guitarDuration, guitarVolume, undefined, guitarReverb.checked);
+					if (pad.axis[STRUM]  == STRUM_UP) {
+						player.queueSnap(guitarContext, guitarSource, midiGuitar, 0, getPitches(), guitarDuration, guitarVolume * 0.5, undefined, guitarReverb.checked);								
+						// TODO more dynamics with muted guitar (explore dutune)
+						//if (pad.axis[STRUM] == STRUM_UP) 
+					}
+					else {
+
+						if (autoStrumCode == STRUM_UP) {
+							player.queueStrumUp(guitarContext, guitarSource, midiGuitar, 0, getPitches(), guitarDuration, guitarVolume, undefined, guitarReverb.checked);					
+						}
+						else 
+							
+						if (autoStrumCode == STRUM_DOWN) {
+							player.queueStrumDown(guitarContext, guitarSource, midiGuitar, 0, getPitches(), guitarDuration, guitarVolume, undefined, guitarReverb.checked);
+						}
+					}
 				}		
 				else
 					

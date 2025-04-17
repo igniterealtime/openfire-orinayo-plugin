@@ -33,7 +33,7 @@
 						const item = res.querySelector('item');
 						
 						if (item) {		
-							viewStream(item.getAttribute("id"));
+							viewStream(item.getAttribute("uri"));
 						}
 					}, function (err) {
 						console.warn('whep failed', err);
@@ -65,7 +65,7 @@
 			peerConnection.setLocalDescription(offer);
 			console.debug('whep offer', offer.sdp);					
 			
-			window.connection.sendIQ($iq({type: 'set', to: window.connection.domain}).c('whep', {id: streamKey, xmlns: 'urn:xmpp:whep:0'}).c('sdp', offer.sdp), 
+			window.connection.sendIQ($iq({type: 'set', to: window.connection.domain}).c('whep', {uri: streamKey, xmlns: 'urn:xmpp:whep:0'}).c('sdp', offer.sdp), 
 				function (res)  {
 					console.debug('whep set response', res);						
 					const answer = res.querySelector('sdp').innerHTML;
