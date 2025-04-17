@@ -2,7 +2,7 @@
 
 <!--
 
-Copyright (c) 1999 - 2020 XMPP Standards Foundation
+Copyright (c) 1999 - 2021 XMPP Standards Foundation
 
 Permission is hereby granted, free of charge, to any
 person obtaining a copy of this software and
@@ -34,7 +34,7 @@ OR OTHER DEALINGS IN THE SOFTWARE.
 
 <xsl:stylesheet xmlns:xsl='http://www.w3.org/1999/XSL/Transform' version='1.0'>
 
-  <xsl:output method='html' encoding='utf-8' omit-xml-declaration='yes' indent='no'/>
+  <xsl:output method='html' media-type='text/html' encoding='utf-8' omit-xml-declaration='yes' indent='no' doctype-system='about:legacy-compat'/>
 
   <xsl:template name="status-notice">
     <xsl:param name="thestatus"/>
@@ -71,13 +71,13 @@ OR OTHER DEALINGS IN THE SOFTWARE.
         </xsl:choose>
       </xsl:if>
       <xsl:if test='$thestatus = "Draft"'>
-        <xsl:text>NOTICE: The protocol defined herein is a </xsl:text><strong>Draft Standard</strong><xsl:text> of the XMPP Standards Foundation. Implementations are encouraged and the protocol is appropriate for deployment in production systems, but some changes to the protocol are possible before it becomes a Final Standard.</xsl:text>
+        <xsl:text>NOTICE: The protocol defined herein is a </xsl:text><strong>Stable Standard</strong><xsl:text> of the XMPP Standards Foundation. Implementations are encouraged and the protocol is appropriate for deployment in production systems, but some changes to the protocol are possible before it becomes a Final Standard.</xsl:text>
       </xsl:if>
       <xsl:if test='$thestatus = "Experimental" and $thetype = "Historical"'>
         <xsl:text>NOTICE: This Historical document attempts to provide canonical documentation of a protocol that is in use within the Jabber/XMPP community. Publication as an XMPP Extension Protocol does not imply approval of this proposal by the XMPP Standards Foundation. This document is not a standards-track specification within the XMPP Standards Foundation's standards process; however, it might be converted to standards-track in the future or might be obsoleted by a more modern protocol.</xsl:text>
       </xsl:if>
       <xsl:if test='$thestatus = "Experimental" and $thetype = "Informational"'>
-        <xsl:text>WARNING: This Informational document is Experimental. Publication as an XMPP Extension Protocol does not imply approval of this proposal by the XMPP Standards Foundation. Implementation of the best practice or protocol profile described herein is encouraged in exploratory implementations, although production systems are advised to carefully consider whether it is appropriate to deploy implementations of this protocol before it advances to a status of Draft.</xsl:text>
+        <xsl:text>WARNING: This Informational document is Experimental. Publication as an XMPP Extension Protocol does not imply approval of this proposal by the XMPP Standards Foundation. Implementation of the best practice or protocol profile described herein is encouraged in exploratory implementations, although production systems are advised to carefully consider whether it is appropriate to deploy implementations of this protocol before it advances to a status of Stable.</xsl:text>
       </xsl:if>
       <xsl:if test='$thestatus = "Experimental" and $thetype = "Procedural"'>
         <xsl:text>NOTICE: This Procedural document proposes that the process or activity defined herein shall be followed by the XMPP Standards Foundation (XSF). However, this process or activity has not yet been approved by the XMPP Council and/or the XSF Board of Directors and is therefore not currently in force.</xsl:text>
@@ -106,10 +106,10 @@ OR OTHER DEALINGS IN THE SOFTWARE.
         <xsl:text>NOTICE: This document is currently within Last Call or under consideration by the XMPP Council for advancement to the next stage in the XSF standards process. </xsl:text>
         <xsl:if test='/xep/header/lastcall'>The Last Call ends on <xsl:value-of select='/xep/header/lastcall'/>.
         </xsl:if>
-        <xsl:text>Please send your feedback to the </xsl:text><a href='http://mail.jabber.org/mailman/listinfo/standards'>standards@xmpp.org</a><xsl:text> discussion list.</xsl:text>
+        <xsl:text>Please send your feedback to the </xsl:text><a href='https://mail.jabber.org/mailman/listinfo/standards'>standards@xmpp.org</a><xsl:text> discussion list.</xsl:text>
       </xsl:if>
       <xsl:if test='$thestatus = "ProtoXEP"'>
-        <xsl:text>WARNING: This document has not yet been accepted for consideration or approved in any official manner by the XMPP Standards Foundation, and this document is not yet an XMPP Extension Protocol (XEP). If this document is accepted as a XEP by the XMPP Council, it will be published at &lt;</xsl:text><a href="http://xmpp.org/extensions/">http://xmpp.org/extensions/</a><xsl:text>&gt; and announced on the &lt;standards@xmpp.org&gt; mailing list.</xsl:text>
+        <xsl:text>WARNING: This document has not yet been accepted for consideration or approved in any official manner by the XMPP Standards Foundation, and this document is not yet an XMPP Extension Protocol (XEP). If this document is accepted as a XEP by the XMPP Council, it will be published at &lt;</xsl:text><a href="https://xmpp.org/extensions/">https://xmpp.org/extensions/</a><xsl:text>&gt; and announced on the &lt;standards@xmpp.org&gt; mailing list.</xsl:text>
       </xsl:if>
       <xsl:if test='$thestatus = "Rejected"'>
         <xsl:text>WARNING: This document has been Rejected by the XMPP Council. Implementation of the protocol described herein is not recommended under any circumstances.</xsl:text>
@@ -141,7 +141,7 @@ OR OTHER DEALINGS IN THE SOFTWARE.
         <xsl:if test='$thestatus = "Retracted"'><li class='current inserted'>Retracted</li></xsl:if>
         <li><xsl:if test='$thestatus = "Proposed"'><xsl:attribute name='class'>current</xsl:attribute></xsl:if>Proposed</li>
         <xsl:if test='$thestatus = "Rejected"'><li class='current inserted'>Rejected</li></xsl:if>
-        <li><xsl:if test='$thestatus = "Draft"'><xsl:attribute name='class'>current</xsl:attribute></xsl:if>Draft</li>
+        <li><xsl:if test='$thestatus = "Draft"'><xsl:attribute name='class'>current</xsl:attribute></xsl:if>Stable</li>
         <li><xsl:if test='$thestatus = "Final"'><xsl:attribute name='class'>current</xsl:attribute></xsl:if>Final</li>
         <xsl:if test='$thestatus = "Deprecated" or $thestatus = "Obsolete"'>
           <li><xsl:if test='$thestatus = "Deprecated"'><xsl:attribute name='class'>current</xsl:attribute></xsl:if>Deprecated</li>
@@ -170,9 +170,7 @@ OR OTHER DEALINGS IN THE SOFTWARE.
   </xsl:template>
 
   <xsl:template match='/'>
-    <xsl:text disable-output-escaping='yes'>&lt;!DOCTYPE html&gt;
-</xsl:text>
-    <html>
+    <html lang='en'>
       <head>
         <title>XEP-<xsl:value-of select='/xep/header/number'/>:<xsl:text> </xsl:text><xsl:value-of select='/xep/header/title' /></title>
         <style type='text/css'>
@@ -191,7 +189,7 @@ content: "XEP-<xsl:value-of select='/xep/header/number'/>";
         <!-- making things mobile-friendly... -->
         <meta>
           <xsl:attribute name='name'><xsl:text>viewport</xsl:text></xsl:attribute>
-          <xsl:attribute name='content'>width=device-width, initial-scale=1.0, maximum-scale=2.0</xsl:attribute>
+          <xsl:attribute name='content'>width=device-width, initial-scale=1.0</xsl:attribute>
         </meta>
         <!-- BEGIN META TAGS FOR DUBLIN CORE -->
         <meta>
@@ -259,15 +257,43 @@ content: "XEP-<xsl:value-of select='/xep/header/number'/>";
             </ul></dd>
           </xsl:if>
           <dt>Copyright</dt>
-          <dd>&#169; 1999 &#x2013; 2020 XMPP Standards Foundation. <a href='#appendix-legal'>SEE LEGAL NOTICES</a>.</dd>
+          <!-- Extract the copyright years from the dates via
+               substring(). If we ever use XSL 2.0, then we could use
+               year-from-date(xs:date()) -->
+          <dd>&#169; <xsl:value-of select='substring(/xep/header/revision[position()=last()]/date,1,4)'/> &#x2013; <xsl:value-of select='substring(/xep/header/revision[position()=1]/date,1,4)'/> XMPP Standards Foundation. <a href='#appendix-legal'>SEE LEGAL NOTICES</a>.</dd>
           <dt>Status</dt>
           <dd>
-            <p><xsl:value-of select='/xep/header/status'/></p>
+            <p><xsl:choose>
+              <xsl:when test='string(/xep/header/status) = "Draft"'>Stable</xsl:when>
+              <xsl:otherwise><xsl:value-of select='/xep/header/status'/></xsl:otherwise>
+            </xsl:choose></p>
             <xsl:call-template name='status-notice'>
               <xsl:with-param name='thestatus' select='/xep/header/status'/>
               <xsl:with-param name='thetype' select='/xep/header/type'/>
             </xsl:call-template>
           </dd>
+          <xsl:variable name='supersedes.count' select='count(/xep/header/supersedes/spec)'/>
+          <xsl:choose>
+            <xsl:when test='$supersedes.count &gt; 0'>
+              <dt>Supersedes</dt>
+              <dd>
+                <xsl:apply-templates select='/xep/header/supersedes/spec'>
+                  <xsl:with-param name='speccount' select='$supersedes.count'/>
+                </xsl:apply-templates>
+              </dd>
+            </xsl:when>
+          </xsl:choose>
+            <xsl:variable name='supersededby.count' select='count(/xep/header/supersededby/spec)'/>
+          <xsl:choose>
+            <xsl:when test='$supersededby.count &gt; 0'>
+              <dt>Superseded By</dt>
+              <dd>
+                <xsl:apply-templates select='/xep/header/supersededby/spec'>
+                  <xsl:with-param name='speccount' select='$supersededby.count'/>
+                </xsl:apply-templates>
+              </dd>
+            </xsl:when>
+          </xsl:choose>
           <dt>Type</dt>
           <dd><xsl:value-of select='/xep/header/type'/></dd>
           <dt>Version</dt>
@@ -300,19 +326,23 @@ content: "XEP-<xsl:value-of select='/xep/header/number'/>";
         <h3 id='appendix-docinfo'>Appendix A: Document Information<xsl:call-template name='anchor-link'><xsl:with-param name='anchor' select='"appendix-docinfo"'/></xsl:call-template></h3>
         <dl class='compact'>
           <dt>Series</dt>
-          <dd><a href='http://xmpp.org/extensions/'>XEP</a></dd>
+          <dd><a href='https://xmpp.org/extensions/'>XEP</a></dd>
           <dt>Number</dt>
           <dd><xsl:value-of select='/xep/header/number'/></dd>
           <dt>Publisher</dt>
           <dd><a href='/xsf/'>XMPP Standards Foundation</a></dd>
           <dt>Status</dt>
           <dd><a>
-            <xsl:attribute name='href'><xsl:text>http://xmpp.org/extensions/xep-0001.html#states-</xsl:text><xsl:value-of select='/xep/header/status'/></xsl:attribute>
-            <xsl:value-of select='/xep/header/status'/>
+            <xsl:attribute name='href'><xsl:text>https://xmpp.org/extensions/xep-0001.html#states-</xsl:text><xsl:value-of select='/xep/header/status'/></xsl:attribute>
+            <xsl:choose>
+              <xsl:when test='string(/xep/header/status) = "Draft"'>Stable</xsl:when>
+              <xsl:otherwise><xsl:value-of select='/xep/header/status'/></xsl:otherwise>
+              <xsl:value-of select='/xep/header/status'/>
+            </xsl:choose>
           </a></dd>
           <dt>Type</dt>
           <dd><a>
-            <xsl:attribute name='href'><xsl:text>http://xmpp.org/extensions/xep-0001.html#types-</xsl:text><xsl:value-of select='/xep/header/type'/></xsl:attribute>
+            <xsl:attribute name='href'><xsl:text>https://xmpp.org/extensions/xep-0001.html#types-</xsl:text><xsl:value-of select='/xep/header/type'/></xsl:attribute>
             <xsl:value-of select='/xep/header/type'/>
           </a></dd>
           <dt>Version</dt>
@@ -327,10 +357,10 @@ content: "XEP-<xsl:value-of select='/xep/header/number'/>";
           <dt>Approving Body</dt>
           <xsl:choose>
             <xsl:when test='$ApprovingBody = "Board"'>
-              <dd><a href='http://xmpp.org/xsf/board/'>XSF Board of Directors</a></dd>
+              <dd><a href='https://xmpp.org/xsf/board/'>XSF Board of Directors</a></dd>
             </xsl:when>
             <xsl:otherwise>
-              <dd><a href='http://xmpp.org/council/'>XMPP Council</a></dd>
+              <dd><a href='https://xmpp.org/council/'>XMPP Council</a></dd>
             </xsl:otherwise>
           </xsl:choose>
           <xsl:variable name='dependencies.count' select='count(/xep/header/dependencies/spec)'/>
@@ -383,7 +413,7 @@ content: "XEP-<xsl:value-of select='/xep/header/number'/>";
             <dt>Registry</dt>
             <dd>
               <xsl:variable name='registryURL'>
-                <xsl:text>http://xmpp.org/registrar/</xsl:text>
+                <xsl:text>https://xmpp.org/registrar/</xsl:text>
                 <xsl:value-of select='/xep/header/shortname'/>
                 <xsl:text>.html</xsl:text>
               </xsl:variable>
@@ -402,12 +432,12 @@ content: "XEP-<xsl:value-of select='/xep/header/number'/>";
         </dl>
         <p>
           <xsl:variable name='formatXML'>
-            <xsl:text>http://xmpp.org/extensions/xep-</xsl:text>
+            <xsl:text>https://xmpp.org/extensions/xep-</xsl:text>
             <xsl:value-of select='/xep/header/number'/>
             <xsl:text>.xml</xsl:text>
           </xsl:variable>
           <xsl:variable name='formatPDF'>
-            <xsl:text>http://xmpp.org/extensions/xep-</xsl:text>
+            <xsl:text>https://xmpp.org/extensions/xep-</xsl:text>
             <xsl:value-of select='/xep/header/number'/>
             <xsl:text>.pdf</xsl:text>
           </xsl:variable>
@@ -430,7 +460,7 @@ content: "XEP-<xsl:value-of select='/xep/header/number'/>";
         <xsl:variable name='discuss.venue' select='count(/xep/header/discuss)'/>
         <xsl:if test='$discuss.count=1'>
           <xsl:variable name='discussWeb'>
-            <xsl:text>http://mail.jabber.org/mailman/listinfo/</xsl:text>
+            <xsl:text>https://mail.jabber.org/mailman/listinfo/</xsl:text>
             <xsl:value-of select='/xep/header/discuss'/>
           </xsl:variable>
           <xsl:variable name='discussMail'>
@@ -442,21 +472,29 @@ content: "XEP-<xsl:value-of select='/xep/header/number'/>";
         <xsl:variable name='Approver' select='/xep/header/approver'/>
         <xsl:choose>
           <xsl:when test='$Approver = "Board"'>
-            <p class='indent'>The primary venue for discussion of XMPP Extension Protocols is the &lt;<a href="http://mail.jabber.org/mailman/listinfo/standards">standards@xmpp.org</a>&gt; discussion list.</p>
-            <p class='indent'>Discussion by the membership of the XSF might also be appropriate (see &lt;<a href="http://mail.jabber.org/mailman/listinfo/members">http://mail.jabber.org/mailman/listinfo/members</a>&gt; for details).</p>
+            <p class='indent'>The primary venue for discussion of XMPP Extension Protocols is the &lt;<a href="https://mail.jabber.org/mailman/listinfo/standards">standards@xmpp.org</a>&gt; discussion list.</p>
+            <p class='indent'>Discussion by the membership of the XSF might also be appropriate (see &lt;<a href="https://mail.jabber.org/mailman/listinfo/members">https://mail.jabber.org/mailman/listinfo/members</a>&gt; for details).</p>
           </xsl:when>
           <xsl:otherwise>
-            <p class='indent'>The primary venue for discussion of XMPP Extension Protocols is the &lt;<a href="http://mail.jabber.org/mailman/listinfo/standards">standards@xmpp.org</a>&gt; discussion list.</p>
-            <p class='indent'>Discussion on other xmpp.org discussion lists might also be appropriate; see &lt;<a href='http://xmpp.org/about/discuss.shtml'>http://xmpp.org/about/discuss.shtml</a>&gt; for a complete list.</p>
+            <p class='indent'>The primary venue for discussion of XMPP Extension Protocols is the &lt;<a href="https://mail.jabber.org/mailman/listinfo/standards">standards@xmpp.org</a>&gt; discussion list.</p>
+            <p class='indent'>Discussion on other xmpp.org discussion lists might also be appropriate; see &lt;<a href='https://xmpp.org/community/'>https://xmpp.org/community/</a>&gt; for a complete list.</p>
             <xsl:if test='contains(/xep/header/dependencies,"RFC")'>
-              <p class='indent'>Given that this XMPP Extension Protocol normatively references IETF technologies, discussion on the &lt;<a href="http://mail.jabber.org/mailman/listinfo/xsf-ietf">xsf-ietf@xmpp.org</a>&gt; list might also be appropriate.</p>
+              <p class='indent'>Given that this XMPP Extension Protocol normatively references IETF technologies, discussion on the &lt;<a href="https://mail.jabber.org/mailman/listinfo/xsf-ietf">xsf-ietf@xmpp.org</a>&gt; list might also be appropriate.</p>
             </xsl:if>
           </xsl:otherwise>
         </xsl:choose>
         <p class='indent'>Errata can be sent to &lt;<a href='mailto:editor@xmpp.org'>editor@xmpp.org</a>&gt;.</p>
         <!-- CONFORMANCE TERMS-->
         <h3 id='appendix-conformance'>Appendix F: Requirements Conformance<xsl:call-template name='anchor-link'><xsl:with-param name='anchor' select='"appendix-conformance"'/></xsl:call-template></h3>
-        <p class='indent'>The following requirements keywords as used in this document are to be interpreted as described in <a href='http://www.ietf.org/rfc/rfc2119.txt'>RFC 2119</a>: "MUST", "SHALL", "REQUIRED"; "MUST NOT", "SHALL NOT"; "SHOULD", "RECOMMENDED"; "SHOULD NOT", "NOT RECOMMENDED"; "MAY", "OPTIONAL".</p>
+        <p class='indent'>
+          The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
+          "SHOULD", "SHOULD NOT", "RECOMMENDED", "NOT RECOMMENDED",
+          "MAY", and "OPTIONAL" in this document are to be interpreted as
+          described in <a href="https://tools.ietf.org/rfc/bcp/bcp14.txt">BCP 14</a>
+          [<a href="https://www.ietf.org/rfc/rfc2119.txt">RFC2119</a>]
+          [<a href="https://tools.ietf.org/rfc/rfc8174.txt">RFC8174</a>] when,
+          and only when, they appear in all capitals, as shown here.
+        </p>
         <!-- NOTES -->
         <h3 id='appendix-notes'>Appendix G: Notes<xsl:call-template name='anchor-link'><xsl:with-param name='anchor' select='"appendix-notes"'/></xsl:call-template></h3>
           <div class='indent'>
@@ -476,7 +514,7 @@ content: "XEP-<xsl:value-of select='/xep/header/number'/>";
           </div>
         <!-- REVISION HISTORY -->
         <h3 id='appendix-revs'>Appendix H: Revision History<xsl:call-template name='anchor-link'><xsl:with-param name='anchor' select='"appendix-revs"'/></xsl:call-template></h3>
-          <p>Note: Older versions of this specification might be available at <a href='http://xmpp.org/extensions/attic/'>http://xmpp.org/extensions/attic/</a></p>
+          <p>Note: Older versions of this specification might be available at <a href='https://xmpp.org/extensions/attic/'>https://xmpp.org/extensions/attic/</a></p>
           <ol class="revision-history">
             <xsl:apply-templates select='/xep/header/revision'/>
           </ol>
@@ -501,6 +539,25 @@ content: "XEP-<xsl:value-of select='/xep/header/number'/>";
             </xsl:otherwise>
           </xsl:choose>
         </xsl:variable>
+        <xsl:variable name="bibtex-url">
+          <xsl:choose>
+            <!-- XEPs after a certain number have an immutable version to which we preferably link -->
+            <!-- TODO: We currently have no versioned link for the latest version of a XEP,
+                 hence the logic below is disabled for all XEPs, by testing for XEP version number > 99999 -->
+            <xsl:when test='/xep/header/number &gt; 999999'>
+              <xsl:text>https://xmpp.org/extensions/attic/xep-</xsl:text>
+              <xsl:value-of select='/xep/header/number'/>
+              <xsl:text>-</xsl:text>
+              <xsl:value-of select='/xep/header/revision[position()=1]/version'/>
+              <xsl:text>.html</xsl:text>
+            </xsl:when>
+            <xsl:otherwise>
+              <xsl:text>https://xmpp.org/extensions/xep-</xsl:text>
+              <xsl:value-of select='/xep/header/number'/>
+              <xsl:text>.html</xsl:text>
+            </xsl:otherwise>
+          </xsl:choose>
+        </xsl:variable>
         <pre>
 <!-- If we had XSL 2.0 we could use year-from-date() and lower-case() below. -->
 @report{<xsl:value-of select='$lowercased-surname-firstauthor'/><xsl:value-of select='$year-of-first-history-entry'/><xsl:value-of select='$bibtex-citekey-postfix'/>,
@@ -510,7 +567,7 @@ content: "XEP-<xsl:value-of select='/xep/header/number'/>";
   number = {<xsl:value-of select='/xep/header/number'/>},
   version = {<xsl:value-of select='/xep/header/revision[position()=1]/version'/>},
   institution = {XMPP Standards Foundation},
-  url = {https://xmpp.org/extensions/xep-<xsl:value-of select='/xep/header/number'/>.html},
+  url = {<xsl:value-of select='$bibtex-url'/>},
   date = {<xsl:value-of select='/xep/header/revision[position()=last()]/date'/>/<xsl:value-of select='/xep/header/revision[position()=1]/date'/>},
 }</pre>
         <p>END</p>
@@ -640,7 +697,21 @@ content: "XEP-<xsl:value-of select='/xep/header/number'/>";
   <xsl:template match='spec'>
     <xsl:param name='speccount' select='""'/>
     <xsl:variable name='specpos' select='position()'/>
-    <xsl:value-of select='.'/>
+    <xsl:variable name='spec' select='translate(string(.), "ABCDEFGHIJKLMNOPQRSTUVWXYZ", "abcdefghijklmnopqrstuvwxyz")'/>
+    <xsl:choose>
+      <xsl:when test='starts-with($spec, "xep-")'><a>
+        <xsl:attribute name="href"><xsl:value-of select="$spec"/>.html</xsl:attribute>
+        <xsl:value-of select='.'/>
+      </a></xsl:when>
+      <xsl:when test='starts-with($spec, "rfc ")'>
+        <xsl:variable name='rfcno' select='substring-after($spec, "rfc ")'/>
+        <a>
+          <xsl:attribute name="href">https://datatracker.ietf.org/doc/html/rfc<xsl:value-of select="$rfcno"/></xsl:attribute>
+          <xsl:value-of select='.'/>
+        </a>
+      </xsl:when>
+      <xsl:otherwise><xsl:value-of select='.'/></xsl:otherwise>
+    </xsl:choose>
     <xsl:if test='$specpos &lt; $speccount'>
       <xsl:text>, </xsl:text>
     </xsl:if>
@@ -665,7 +736,17 @@ content: "XEP-<xsl:value-of select='/xep/header/number'/>";
     <li>
       <xsl:variable name='anchor'>revision-history-v<xsl:value-of select='version'/></xsl:variable>
       <xsl:attribute name='id'><xsl:value-of select='$anchor'/></xsl:attribute>
-      <div class='revision-head'>Version <xsl:value-of select='version'/><xsl:text> </xsl:text>(<xsl:value-of select='date'/>)<xsl:call-template name='anchor-link'><xsl:with-param name='anchor' select='$anchor'/></xsl:call-template></div>
+      <div class='revision-head'>Version <a>
+        <xsl:attribute name='href'>
+          <xsl:text>https://xmpp.org/extensions/attic/xep-</xsl:text>
+          <xsl:value-of select='/xep/header/number'/>
+          <xsl:text>-</xsl:text>
+          <xsl:value-of select='version'/>
+          <xsl:text>.html</xsl:text>
+        </xsl:attribute>
+        <xsl:value-of select='version'/>
+      </a>
+      <xsl:text> </xsl:text>(<xsl:value-of select='date'/>)<xsl:call-template name='anchor-link'><xsl:with-param name='anchor' select='$anchor'/></xsl:call-template></div>
       <xsl:apply-templates select='remark'/>
       <div class='revision-author'><xsl:value-of select='initials'/></div>
     </li>
@@ -1046,6 +1127,26 @@ content: "XEP-<xsl:value-of select='/xep/header/number'/>";
     <figure class='code'>
       <figcaption><xsl:value-of select='@caption'/></figcaption>
       <pre class='prettyprint'><xsl:apply-templates/></pre>
+    </figure>
+  </xsl:template>
+
+  <xsl:template match='cve'>
+    <figure class='cve'>
+      <figcaption>CVE-<xsl:value-of select='@id'/>
+	(<a><xsl:attribute name='href'>https://nvd.nist.gov/vuln/detail/CVE-<xsl:value-of select='@id'/></xsl:attribute>NIST</a>,
+	<a><xsl:attribute name='href'>https://cve.mitre.org/cgi-bin/cvename.cgi?name=<xsl:value-of select='@id'/></xsl:attribute>Mitre</a>)
+      </figcaption>
+      <xsl:choose>
+	<xsl:when test="@url != ''">
+	  <a>
+	    <xsl:attribute name='href'><xsl:value-of select='@url'/></xsl:attribute>
+	    <xsl:apply-templates/>
+	  </a>
+	</xsl:when>
+	<xsl:otherwise>
+	  <xsl:apply-templates/>
+	</xsl:otherwise>
+      </xsl:choose>
     </figure>
   </xsl:template>
 

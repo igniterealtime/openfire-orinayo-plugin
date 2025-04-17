@@ -6,7 +6,7 @@
 <?xml-stylesheet type='text/xsl' href='xep.xsl'?>
 <xep xmlns="">
 <header>
-  <title>WebRTC Streaming</title>
+  <title>Media Ingestion and Egress</title>
   <abstract>This specification defines a payload format for the ingestion and egress of media streams for music and other media collaborations using WebRTC-based ingestion/egress. </abstract>
   <legal>
     <copyright>This XMPP Extension Protocol is copyright © 1999 – 2023 by the <link url="https://xmpp.org/">XMPP Standards Foundation</link> (XSF).</copyright>
@@ -32,7 +32,7 @@
   </author>
   <revision>  
     <version>0.0.1</version>
-    <date>2023-12-31</date>
+    <date>2025-06-30</date>
     <initials>do</initials>
     <remark>
       <ul>
@@ -45,7 +45,7 @@
   <p>While WebRTC specifies the usage of SDPs [RFC8866] and an Offer/Answer model [RFC3264] for creating connections, WebRTC does not define the precise signaling protocols over which SDPs should be exchanged [RFC8825]. In order to establish a WebRTC session between two WebRTC entities, a signaling protocol is usually used to exchange SDPs</p>
   <p>With HTTP/S applications, WHIP and WHEP have been proposed as simple protocols to ingest and egress media streams using WebRTC.</p>
   <p>This specification provides the means to do likewise in XMPP for communicating user media streams using WebRTC-based ingestion/egress. The WebRTC SDP payload format is transported using IQ stanzas which map directly to WHIP and WHEP REST endpoints.</p>
-  <p>This specification does not prescribe a method for the security, discovery, publishing and subscription of published media stream URIs. It is assumed that this will be achieved with other XMPP mechanisms like Publish-Subscribe (&xep0060;) or Call Invites (&xep0482;) for example.</p>
+  <p>This specification does not prescribe a method for the security, discovery, publishing and subscription of published media stream URIs. It is assumed that this will be achieved with other XMPP mechanisms like &xep0060; or &xep0482; for example.</p>
 </section1>
 <section1 topic="Requirements" anchor="reqs">
   <ul>
@@ -118,7 +118,7 @@
   
   <section2 topic='User shares the media stream URI with another user' anchor='share-media-stream'>   
     <example caption='The media publishing user invites another user to egress the media stream'><![CDATA[  
-<message to='romeo@example.com' id='id1' type='chat'>
+<message to='romeo@example.com' id='id1' from='juliet@capulet.lit/producer' type='chat'>
   <invite xmlns='urn:xmpp:call-invites:0'>
     <external uri='whep:juliet-ih28sx61' />
   </invite>
