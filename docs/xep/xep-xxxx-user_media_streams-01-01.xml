@@ -6,7 +6,7 @@
 <?xml-stylesheet type='text/xsl' href='xep.xsl'?>
 <xep xmlns="">
 <header>
-  <title>DISCO</title>
+  <title>WebRTC Streaming</title>
   <abstract>This specification defines a payload format for the ingestion and egress of media streams for music and other media collaborations using WebRTC-based ingestion/egress. </abstract>
   <legal>
     <copyright>This XMPP Extension Protocol is copyright © 1999 – 2023 by the <link url="https://xmpp.org/">XMPP Standards Foundation</link> (XSF).</copyright>
@@ -45,7 +45,7 @@
   <p>While WebRTC specifies the usage of SDPs [RFC8866] and an Offer/Answer model [RFC3264] for creating connections, WebRTC does not define the precise signaling protocols over which SDPs should be exchanged [RFC8825]. In order to establish a WebRTC session between two WebRTC entities, a signaling protocol is usually used to exchange SDPs</p>
   <p>With HTTP/S applications, WHIP and WHEP have been proposed as simple protocols to ingest and egress media streams using WebRTC.</p>
   <p>This specification provides the means to do likewise in XMPP for communicating user media streams using WebRTC-based ingestion/egress. The WebRTC SDP payload format is transported using IQ stanzas which map directly to WHIP and WHEP REST endpoints.</p>
-  <p>This specification does not prescribe a method for the discovery, publishing and subscription of available URIs for WHIP and WHEP. It is assumed that this will be achieved with other XMPP mechanisms like Publish-Subscribe (&xep0060;) or HTTP Online Meetings (&xep0483;) for example.</p>
+  <p>This specification does not prescribe a method for the security, discovery, publishing and subscription of published media stream URIs. It is assumed that this will be achieved with other XMPP mechanisms like Publish-Subscribe (&xep0060;) or Call Invites (&xep0482;) for example.</p>
 </section1>
 <section1 topic="Requirements" anchor="reqs">
   <ul>
@@ -84,20 +84,21 @@
 </section1>
 <section1 topic="User Media Streams Workflow" anchor="workflow">
   <section2 topic='User requests server to ingest a media stream' anchor='ingest-media-stream'>   
-    <p>A sample protocol flow to ingest a media session from the client. By default, published media streams have a public scope. They can be accessed by any requesting user. The media stream owner can optionally specify an access scope attribute with values "protected" or "private" to restrict access to users with mutual presence subscription or only other resources of the stream owner respectively.</p> 
+    <p>A sample protocol flow to ingest a media session from the client.</p> 
     <example caption='Client sends a WHIP SDP offer of a media stream to server'><![CDATA[  
 <iq from='juliet@capulet.lit/producer' id='ih28sx61' type='set'>
-  <whip xmlns='urn:xmpp:whip:0' scope='protected'>
+  <whip xmlns='urn:xmpp:whip:0'>
     <sdp>
 	  ...... SDP OFFER
     </sdp>
   </whip>
 </iq>	
     ]]></example> 
-    <p>Depending on how the WHIP service is configured, the server may respond with a complete SDP including ICE candidates or may pushes a patched WHIP SDP with ICE candidates as they trickle in</p> 	
-    <example caption='The server responds with a WHIP SDP answer for the client'><![CDATA[  
+	<p>The server responds with a IQ result that contains an external URI for accessing the published media stream by any user permitted to egress the media stream.</p>
+    <p>Depending on how the WHIP service is configured, the server may include a complete SDP answer including ICE candidates or a partial SDP without ICE candidates and later push a patched WHIP SDP with ICE candidates as they trickle in. </p> 	
+    <example caption='The server responds with a complete or partial WHIP SDP answer for the client'><![CDATA[  
 <iq to='juliet@capulet.lit/producer' id='ih28sx61' from='shakespeare.lit' type='result'>
-  <whip xmlns='urn:xmpp:whip:0'>
+  <whip xmlns='urn:xmpp:whip:0' uri="whep:juliet-ih28sx61">
     <sdp>  
       ...... SDP ANSWER
     </sdp>	
@@ -106,7 +107,7 @@
     ]]></example> 	
     <example caption='The server pushes a patched WHIP SDP with ICE candidates'><![CDATA[  
 <iq to='juliet@shakespeare.lit/producer' id='87645fg23' from='shakespeare.lit' type='set'>
-  <whip xmlns='urn:xmpp:whip:0'>
+  <whip xmlns='urn:xmpp:whip:0' uri="whep:juliet-ih28sx61">
     <sdp>  
       ...... SDP PATCH
     </sdp>	
@@ -115,23 +116,17 @@
     ]]></example> 		
   </section2>
   
-  <section2 topic='Another user requests to egress the media stream' anchor='egress-media-stream'>   
-    <p>A sample protocol flow to egress a user media by the client</p> 
-    <example caption='Client requests all active and accessible media streams'><![CDATA[  
-<iq to='shakespeare.lit' from='romeo@capulet.lit//consumer' id='ih28sx31' type='get'>
-  <whep xmlns='urn:xmpp:whep:0' />
-</iq>	
-    ]]></example> 	
-    <example caption='The server returns a list of media stream identities that are within the access scope of the requesting user'><![CDATA[  
-<iq to='romeo@capulet.lit//consumer' id='ih28sx31' from='shakespeare.lit' type='result'>
-  <whep xmlns='urn:xmpp:whep:0'>
-    <item id="ih28sx61" jid="juliet@shakespeare.lit/producer">
-  </whep>
-</iq>	
-    ]]></example> 	
-    <example caption='Client sends an WHEP SDP offer to receive a specific user media stream'><![CDATA[ 
+  <section2 topic='User shares the media stream URI with another user' anchor='share-media-stream'>   
+    <example caption='The media publishing user invites another user to egress the media stream'><![CDATA[  
+<message to='romeo@example.com' id='id1' type='chat'>
+  <invite xmlns='urn:xmpp:call-invites:0'>
+    <external uri='whep:juliet-ih28sx61' />
+  </invite>
+</message>
+    ]]></example> 		
+    <example caption='The invited user sends an WHEP SDP offer to egress the media stream'><![CDATA[ 
 <iq from='romeo@shakespeare.lit/consumer' id='6338Vbrhrl' type='set'>
-  <whep id="ih28sx61" xmlns='urn:xmpp:whep:0'>
+  <whep xmlns='urn:xmpp:whep:0' uri='whep:juliet-ih28sx61'>
     <sdp>  
       ...... SDP OFFER
     </sdp>		
