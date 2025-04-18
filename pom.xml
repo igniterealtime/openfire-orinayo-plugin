@@ -59,21 +59,7 @@
                         </resource>
                     </resources>
                     </configuration>
-                </execution>   
-                <execution>
-                    <id>override-orinayo-webclient</id>
-                    <phase>prepare-package</phase>
-                    <goals>
-                    <goal>copy-resources</goal>
-                    </goals>
-                    <configuration>
-                    <overwrite>true</overwrite>                 
-                    <outputDirectory>${project.basedir}/classes/jsp</outputDirectory>
-                    <resources>                         
-                        <resource><directory>${project.basedir}/../../Jus-Be/orinayo/docs</directory></resource>                                                
-                    </resources>
-                    </configuration>
-                </execution>                				
+                </execution>                  				
                </executions>
             </plugin>            
 			<plugin>
