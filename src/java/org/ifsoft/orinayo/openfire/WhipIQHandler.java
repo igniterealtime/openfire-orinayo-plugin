@@ -84,7 +84,7 @@ public class WhipIQHandler extends IQHandler implements ServerFeaturesProvider
 				Log.debug("Whip handleIQ \n" + iq.toString());
 				final Element whip = iq.getChildElement();
 				final String streamKey = iq.getFrom().getNode() + "-" + iq.getID();
-				final String uri = "whep:" + streamKey;
+				final String uri = "stream-key:" + streamKey;
 					
 				if (whip != null) {
 					final Element sdp = whip.element("sdp");
