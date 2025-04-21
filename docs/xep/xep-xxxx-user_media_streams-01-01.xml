@@ -6,7 +6,7 @@
 <?xml-stylesheet type='text/xsl' href='xep.xsl'?>
 <xep xmlns="">
 <header>
-  <title>Media Ingestion and Egress</title>
+  <title>Media Streams</title>
   <abstract>This specification defines a payload format for the ingestion and egress of media streams for music and other media collaborations using WebRTC-based ingestion/egress. </abstract>
   <legal>
     <copyright>This XMPP Extension Protocol is copyright © 1999 – 2023 by the <link url="https://xmpp.org/">XMPP Standards Foundation</link> (XSF).</copyright>
@@ -98,7 +98,7 @@
     <p>Depending on how the WHIP service is configured, the server may include a complete SDP answer including ICE candidates or a partial SDP without ICE candidates and later push a patched WHIP SDP with ICE candidates as they trickle in. </p> 	
     <example caption='The server responds with a complete or partial WHIP SDP answer for the client'><![CDATA[  
 <iq to='juliet@capulet.lit/producer' id='ih28sx61' from='shakespeare.lit' type='result'>
-  <whip xmlns='urn:xmpp:whip:0' uri="whep:juliet-ih28sx61">
+  <whip xmlns='urn:xmpp:whip:0' uri='stream-key:juliet-ih28sx61'>
     <sdp>  
       ...... SDP ANSWER
     </sdp>	
@@ -107,7 +107,7 @@
     ]]></example> 	
     <example caption='The server pushes a patched WHIP SDP with ICE candidates'><![CDATA[  
 <iq to='juliet@shakespeare.lit/producer' id='87645fg23' from='shakespeare.lit' type='set'>
-  <whip xmlns='urn:xmpp:whip:0' uri="whep:juliet-ih28sx61">
+  <whip xmlns='urn:xmpp:whip:0' uri='stream-key:juliet-ih28sx61'>
     <sdp>  
       ...... SDP PATCH
     </sdp>	
@@ -120,13 +120,13 @@
     <example caption='The media publishing user invites another user to egress the media stream'><![CDATA[  
 <message to='romeo@example.com' id='id1' from='juliet@capulet.lit/producer' type='chat'>
   <invite xmlns='urn:xmpp:call-invites:0'>
-    <external uri='whep:juliet-ih28sx61' />
+    <external uri='stream-key:juliet-ih28sx61' />
   </invite>
 </message>
     ]]></example> 		
     <example caption='The invited user sends an WHEP SDP offer to egress the media stream'><![CDATA[ 
 <iq from='romeo@shakespeare.lit/consumer' id='6338Vbrhrl' type='set'>
-  <whep xmlns='urn:xmpp:whep:0' uri='whep:juliet-ih28sx61'>
+  <whep xmlns='urn:xmpp:whep:0' uri='stream-key:juliet-ih28sx61'>
     <sdp>  
       ...... SDP OFFER
     </sdp>		
