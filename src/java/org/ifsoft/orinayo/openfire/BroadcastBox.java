@@ -86,7 +86,7 @@ public class BroadcastBox implements Plugin, PropertyEventListener, ProcessListe
         MUCEventDispatcher.removeListener(this);		
 
         try {
-            Log.info("orinayo terminated - started");			
+            Log.debug("orinayo terminated - started");			
             if (executor != null)  executor.shutdown();
             if (orinayoThread != null) orinayoThread.destory();
             if (jspService != null) HttpBindManager.getInstance().removeJettyHandler(jspService);				
@@ -98,7 +98,7 @@ public class BroadcastBox implements Plugin, PropertyEventListener, ProcessListe
 
 			jspService.destroy();
 
-            Log.info("orinayo terminated - completed");
+            Log.debug("orinayo terminated - completed");
         }
         catch (Exception e) {
             Log.error("orinayo terminated - aborted", e);
@@ -144,7 +144,7 @@ public class BroadcastBox implements Plugin, PropertyEventListener, ProcessListe
 		//midiServer.start();		
 		
         self = this;							
-        Log.info("orinayo initiated");
+        Log.debug("orinayo initiated");
     }
 
     public static String getPort() {
@@ -181,11 +181,11 @@ public class BroadcastBox implements Plugin, PropertyEventListener, ProcessListe
 	}
 	
     public void onOutputLine(final String line)     {
-        Log.info("onOutputLine " + line);
+        Log.debug("onOutputLine " + line);
     }
 
     public void onProcessQuit(int code)     {
-        Log.info("onProcessQuit " + code);
+        Log.debug("onProcessQuit " + code);
     }
 
     public void onOutputClosed() {
@@ -193,7 +193,7 @@ public class BroadcastBox implements Plugin, PropertyEventListener, ProcessListe
     }
 
     public void onErrorLine(final String line)     {
-        Log.info(line);
+        Log.debug(line);
     }
 
     public void onError(final Throwable t)     {
@@ -205,7 +205,7 @@ public class BroadcastBox implements Plugin, PropertyEventListener, ProcessListe
         jspService.setClassLoader(this.getClass().getClassLoader());
         jspService.getMimeTypes().addMimeMapping("wasm", "application/wasm");
  
-        Log.info("BroadcastBox jsp service enabled");
+        Log.debug("BroadcastBox jsp service enabled");
         HttpBindManager.getInstance().addJettyHandler(jspService);
     }
 
@@ -278,7 +278,7 @@ public class BroadcastBox implements Plugin, PropertyEventListener, ProcessListe
         file.setReadable(true, true);
         file.setWritable(true, true);
         file.setExecutable(true, true);
-        Log.info("checkNatives orinayo executable path " + path);
+        Log.debug("checkNatives orinayo executable path " + path);
     }
 
     // -------------------------------------------------------
@@ -289,12 +289,12 @@ public class BroadcastBox implements Plugin, PropertyEventListener, ProcessListe
 	
     @Override
     public void send(MidiMessage message, long timeStamp) {
-        Log.info("midi receiver " + message);
+        Log.debug("midi receiver " + message);
     }
 
     @Override
     public void close() {
-        Log.info("midi receiver closed");
+        Log.debug("midi receiver closed");
     }
 	
     // -------------------------------------------------------

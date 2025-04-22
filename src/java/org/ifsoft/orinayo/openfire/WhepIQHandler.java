@@ -160,7 +160,7 @@ public class WhepIQHandler extends IQHandler implements ServerFeaturesProvider
 		StringBuilder result = new StringBuilder();
 		String authHeaderValue = streamKey != null ? "Bearer " + streamKey : null;
 		
-		Log.info("fetch offer " + urlToRead + " " + authHeaderValue + "\n" + payload);
+		Log.debug("fetch offer " + urlToRead + " " + authHeaderValue + "\n" + payload);
 		
 		try {
 			url = new URL(urlToRead);
@@ -187,7 +187,7 @@ public class WhepIQHandler extends IQHandler implements ServerFeaturesProvider
 		} catch (Exception e) {
 			Log.error("fetch", e);
 		}
-		Log.info("fetch answer " + urlToRead + " " + authHeaderValue + "\n" + accumulator);		
+		Log.debug("fetch answer " + urlToRead + " " + authHeaderValue + "\n" + accumulator);		
 		return accumulator;
 	}	
 }

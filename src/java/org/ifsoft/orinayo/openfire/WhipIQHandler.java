@@ -154,7 +154,7 @@ public class WhipIQHandler extends IQHandler implements ServerFeaturesProvider
 		StringBuilder result = new StringBuilder();
 		String authHeaderValue = "Bearer " + streamKey;
 		
-		Log.info("getSDP offer " + urlToRead + " " + authHeaderValue + "\n" + sdp);
+		Log.debug("getSDP offer " + urlToRead + " " + authHeaderValue + "\n" + sdp);
 		
 		try {
 			url = new URL(urlToRead);
@@ -182,7 +182,7 @@ public class WhipIQHandler extends IQHandler implements ServerFeaturesProvider
 		} catch (Exception e) {
 			Log.error("getSDP", e);
 		}
-		Log.info("getSDP answer " + urlToRead + " " + authHeaderValue + "\n" + accumulator);		
+		Log.debug("getSDP answer " + urlToRead + " " + authHeaderValue + "\n" + accumulator);		
 		return accumulator;
 	}
 	
