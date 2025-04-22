@@ -25,8 +25,8 @@ copy orinayo.jar to the plugins folder
 
 ## Configuration
 
-
 ## How to use
+Goto https://jus-be.github.io/orinayo/help.html
 
 ## Further information
 
