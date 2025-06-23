@@ -45,7 +45,9 @@ import org.jivesoftware.util.PropertyEventDispatcher;
 import org.jivesoftware.util.PropertyEventListener;
 import org.jivesoftware.util.StringUtils;
 
+import org.eclipse.jetty.ee8.servlet.*;
 import org.eclipse.jetty.ee8.webapp.WebAppContext;
+import org.eclipse.jetty.ee8.proxy.ProxyServlet;
 
 import java.lang.reflect.*;
 import java.util.*;
@@ -126,8 +128,8 @@ public class BroadcastBox implements Plugin, PropertyEventListener, ProcessListe
 		
         checkNatives(pluginDirectory);
         executor = Executors.newCachedThreadPool();
-        startJSP(pluginDirectory);
         startGoProcesses(pluginDirectory);
+        startJSP(pluginDirectory);		
 		
 		try {
 			jmdns = new JmDNS();
@@ -204,6 +206,20 @@ public class BroadcastBox implements Plugin, PropertyEventListener, ProcessListe
         jspService = new WebAppContext(null, pluginDirectory.getPath() + "/classes/jsp",  "/orinayo");
         jspService.setClassLoader(this.getClass().getClassLoader());
         jspService.getMimeTypes().addMimeMapping("wasm", "application/wasm");
+		
+		String ipaddr = JiveGlobals.getProperty("orinayo.ipaddr", getIpAddress());
+		String tcpPort = JiveGlobals.getProperty("orinayo.port", getPort());				
+		String webUrl = "http://" + ipaddr + ":" + tcpPort;		
+		
+		ServletHolder proxyWhip = new ServletHolder(ProxyServlet.Transparent.class);
+		proxyWhip.setInitParameter("proxyTo", webUrl);
+		proxyWhip.setInitParameter("prefix", "/");
+		jspService.addServlet(proxyWhip, "/api/whip/*");
+
+		ServletHolder proxyWhep = new ServletHolder(ProxyServlet.Transparent.class);
+		proxyWhep.setInitParameter("proxyTo", webUrl);
+		proxyWhep.setInitParameter("prefix", "/");
+		jspService.addServlet(proxyWhep, "/api/whep/*");		
  
         Log.debug("BroadcastBox jsp service enabled");
         HttpBindManager.getInstance().addJettyHandler(jspService);

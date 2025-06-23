@@ -1,0 +1,90 @@
+<!--
+  This example demonstrates how to publish a stream without libraries or dependencies.
+-->
+
+<html>
+  <head>
+    <title>video publisher</title>
+    <link rel="icon" href="./favicon.ico">		
+    <script src="./strophe.umd.min.js"></script>  	
+  </head>
+
+  <body>
+    <button onclick="window.publishStream()"> Publish Stream </button>
+
+    <h3> Video </h3>
+    <video id="videoPlayer" autoplay muted controls style="width: 500"> </video>
+
+    <h3> Connection State </h3>
+    <div id="connectionState"></div> <br />
+  </body>
+
+  <script>
+	window.publishStream =  async () => {	
+		window.connection = new Strophe.Connection(location.protocol.replace("http", "ws") + "//" + location.host + "/ws/");	
+
+		window.connection.connect(location.hostname, null, async function (status) {
+			console.debug("XMPPConnection.connect", status);
+
+			if (status === Strophe.Status.CONNECTED)  {
+				window.connection.send($pres());
+				
+				let mediaOptions = {audio: true, video: true};
+				
+				let peerConnection = new RTCPeerConnection();
+
+				peerConnection.oniceconnectionstatechange = () => {
+					document.getElementById('connectionState').innerText = peerConnection.iceConnectionState;
+				}
+				
+				const stream = await navigator.mediaDevices.getUserMedia(mediaOptions);
+				document.getElementById('videoPlayer').srcObject = stream;
+				
+				stream.getTracks().forEach(t => 
+				{
+					if (t.kind === 'audio') {
+					  peerConnection.addTransceiver(t, {direction: 'sendonly'})
+					} else {
+					  peerConnection.addTransceiver(t, {
+						direction: 'sendonly',
+						sendEncodings: [
+						  {
+							rid: 'high'
+						  },
+						  {
+							rid: 'med',
+							scaleResolutionDownBy: 2.0
+						  },
+						  {
+							rid: 'low',
+							scaleResolutionDownBy: 4.0
+						  }
+						]
+					  })
+					}
+				})			
+				
+				const offer = await peerConnection.createOffer();
+				peerConnection.setLocalDescription(offer);
+				
+				window.connection.sendIQ($iq({type: 'set', to: window.connection.domain}).c('whip', {xmlns: 'urn:xmpp:whip:0'}).c('sdp', offer.sdp).up().c('json', "{}"), 
+					function (res)  {
+						const uri = res.querySelector('whip').getAttribute("uri");					
+						const answer = res.querySelector('sdp').innerHTML;
+						peerConnection.setRemoteDescription({sdp: answer,  type: 'answer'});	
+						console.debug('whip answer', uri, answer);			
+
+					}, function (err) {
+						console.warn('whip failed', err);
+					}
+				);								
+			}
+			else
+
+			if (status === Strophe.Status.DISCONNECTED)  {
+
+			}
+		});			
+	}  
+  </script>
+</html>

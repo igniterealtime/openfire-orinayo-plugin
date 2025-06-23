@@ -73,7 +73,13 @@
         </plugins>
     </build>
 
-    <dependencies>	      
+    <dependencies>	  
+		<dependency>
+			<groupId>org.eclipse.jetty.ee8</groupId>
+			<artifactId>jetty-ee8-proxy</artifactId>
+			<version>${jetty.version}</version>
+		</dependency>
+		
         <dependency>
             <groupId>net.sf.json-lib</groupId>
             <artifactId>json-lib</artifactId>

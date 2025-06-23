@@ -36,8 +36,8 @@
 
 <%
 	String service_url = "https://" + XMPPServer.getInstance().getServerInfo().getHostname() + ":" + JiveGlobals.getProperty("httpbind.port.secure", "7443") + "/orinayo";
-	String publish_url = service_url + "/video-publisher.html";	
-	String subscribe_url = service_url + "/video-watcher.html";	
+	String publish_url = service_url + "/xmpp-video-publisher.html";	
+	String subscribe_url = service_url + "/xmpp-video-watcher.html";	
 %>	
 
 <% if (request.getParameter("deletesuccess") != null) { %>

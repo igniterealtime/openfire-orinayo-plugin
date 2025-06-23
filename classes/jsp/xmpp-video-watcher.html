@@ -1,0 +1,83 @@
+<!--
+  This example demonstrates how to watch a stream without libraries or dependencies.
+  With this HTML you can add a 'Broadcast Box Player' to any site you want
+-->
+
+<html>
+  <head>
+    <title>video watcher</title>
+    <link rel="icon" href="./favicon.ico">	
+    <script src="./strophe.umd.min.js"></script>  		
+  </head>
+
+  <body>
+    <h3> Video </h3>
+    <video id="videoPlayer" autoplay muted controls style="width: 500"> </video>
+
+    <h3> Connection State </h3>
+    <div id="connectionState"></div> <br />
+  </body>
+
+  <script>
+	window.addEventListener("load", function() {
+		window.connection = new Strophe.Connection(location.protocol.replace("http", "ws") + "//" + location.host + "/ws/");
+
+		window.connection.connect(location.hostname, null, function (status) {
+			console.debug("XMPPConnection.connect", status);
+
+			if (status === Strophe.Status.CONNECTED)  {
+				window.connection.send($pres());
+
+				window.connection.sendIQ($iq({type: 'get', to: window.connection.domain}).c('whep', {xmlns: 'urn:xmpp:whep:0'}), 
+					function (res)  {
+						console.debug('whep get response', res);						
+						const item = res.querySelector('item');
+						
+						if (item) {		
+							viewStream(item.getAttribute("uri"));
+						}
+					}, function (err) {
+						console.warn('whep failed', err);
+					}
+				);	
+			}
+			else
+
+			if (status === Strophe.Status.DISCONNECTED)  {
+
+			}
+		});
+    });
+	
+	function viewStream(streamKey) {
+		let peerConnection = new RTCPeerConnection()
+		peerConnection.addTransceiver('audio', { direction: 'recvonly' })
+        peerConnection.addTransceiver('video', { direction: 'recvonly' })		
+
+		peerConnection.ontrack = function (event) {
+			document.getElementById('videoPlayer').srcObject = event.streams[0]
+		}
+
+		peerConnection.oniceconnectionstatechange = () => {
+			document.getElementById('connectionState').innerText = peerConnection.iceConnectionState;
+		}
+
+		peerConnection.createOffer().then(offer => {
+			peerConnection.setLocalDescription(offer);
+			console.debug('whep offer', offer.sdp);					
+			
+			window.connection.sendIQ($iq({type: 'set', to: window.connection.domain}).c('whep', {uri: streamKey, xmlns: 'urn:xmpp:whep:0'}).c('sdp', offer.sdp), 
+				function (res)  {
+					console.debug('whep set response', res);						
+					const answer = res.querySelector('sdp').innerHTML;
+					peerConnection.setRemoteDescription({sdp: answer,  type: 'answer'});	
+					console.debug('whep answer', answer);			
+
+				}, function (err) {
+					console.warn('whep failed', err);
+				}
+			);				
+		})	
+	}
+  </script>
+</html>

@@ -17,6 +17,7 @@
 	<filter>
 	  <filter-name>CorsFilter</filter-name>
 	  <filter-class>org.ifsoft.orinayo.openfire.CORSFilter</filter-class>
+      <async-supported>true</async-supported>	  
 	</filter>
 	
 	<filter-mapping>
@@ -28,6 +29,7 @@
 	<filter>
 		<filter-name>OhunRedirectFilter</filter-name>
 		<filter-class>org.ifsoft.orinayo.openfire.OhunRedirectFilter</filter-class>
+        <async-supported>true</async-supported>			
 	</filter>
 
 	<filter-mapping>
