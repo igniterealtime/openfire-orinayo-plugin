@@ -8,6 +8,7 @@ It uses :
 - [Broadcast Box](https://github.com/Glimesh/broadcast-box) to implement a [payload format for ingestion and egress of WebRTC media streams in XMPP based on HTTP WHIP and WHEP](https://igniterealtime.github.io/openfire-orinayo-plugin/xep)
 - [Java code provided by Paul J. Drongowski](https://sandsoftwaresound.net/chordpro-auto-accompaniment-midi-messages/) to convert extended ChordPro text into an arranger compatible MIDI file.
 - [OrinAyo Web Client](https://github.com/Jus-Be/orin-ayo) which creates accompaniment music with WebAudio and supports digital Guitar and Midi Controller devices.
+- [Mornin Voice Chat App](https://github.com/deleolajide/mornin.fm) which provides an audio conference for voice chat. Use this to replace the deprecated Ohun plugin for Openfire.
 
 ## CI Build Status
 
