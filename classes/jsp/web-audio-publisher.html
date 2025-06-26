@@ -8,7 +8,6 @@
   </head>
 
   <body>
-    <b> Stream Key </b> <input type="text" id="streamKey" /> <br />
     <button onclick="window.publishStream()"> Publish Stream </button>
 
     <h3> Video </h3>
@@ -21,12 +20,7 @@
   <script>
 	window.publishStream =  async () => {
 		const whipURL = location.origin + "/orinayo/api/whip";
-		const streamKey = document.getElementById('streamKey').value
-
-		if (streamKey === '') {
-			return window.alert('Stream Key must not be empty')
-		}
-
+        const streamKey = crypto.randomUUID();
 		let mediaOptions = {audio: true, video: false}
 		
 		let peerConnection = new RTCPeerConnection();
@@ -36,6 +30,8 @@
 		}
 		
 		const stream = await navigator.mediaDevices.getUserMedia(mediaOptions);
+		console.debug("publish stream", streamKey, stream.id);
+		
 		document.getElementById('audioPlayer').srcObject = stream;
 		
 		stream.getTracks().forEach(t => {
@@ -43,7 +39,7 @@
 			  peerConnection.addTransceiver(t, {direction: 'sendonly'})
 			}
 		})		
-		
+			  
 		const offer = await peerConnection.createOffer();
 		peerConnection.setLocalDescription(offer)
 

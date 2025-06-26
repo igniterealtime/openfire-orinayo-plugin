@@ -15,18 +15,6 @@
     </servlet-mapping>
 	
 	<filter>
-	  <filter-name>CorsFilter</filter-name>
-	  <filter-class>org.ifsoft.orinayo.openfire.CORSFilter</filter-class>
-      <async-supported>true</async-supported>	  
-	</filter>
-	
-	<filter-mapping>
-	  <filter-name>CorsFilter</filter-name>
-	  <url-pattern>/*</url-pattern>
-	</filter-mapping>
-	
-
-	<filter>
 		<filter-name>OhunRedirectFilter</filter-name>
 		<filter-class>org.ifsoft.orinayo.openfire.OhunRedirectFilter</filter-class>
         <async-supported>true</async-supported>			
@@ -38,7 +26,20 @@
 		<dispatcher>REQUEST</dispatcher>
 	</filter-mapping>	
 
-	<!--
+
+	<filter>
+	  <filter-name>CorsFilter</filter-name>
+	  <filter-class>org.ifsoft.orinayo.openfire.CORSFilter</filter-class>
+      <async-supported>true</async-supported>	  
+	</filter>
+	
+	<filter-mapping>
+	  <filter-name>CorsFilter</filter-name>
+	  <url-pattern>/*</url-pattern>
+	</filter-mapping>
+	
+
+	<!--	
     <filter>
         <filter-name>cross-origin</filter-name>
         <filter-class>org.eclipse.jetty.servlets.CrossOriginFilter</filter-class>

@@ -33,13 +33,13 @@
     webManager.init(request, response, session, application, out ); 
 
 	String publicHost = XMPPServer.getInstance().getServerInfo().getHostname() + ":" + JiveGlobals.getProperty("httpbind.port.secure", "7443");
-	String 	url = "https://" + publicHost + "/orinayo";		
+	String 	url = "https://" + publicHost + "/orinayo/ohun";		
 %>
 
 <html>
 <head>
-<title><fmt:message key="plugin.title.description" /></title>
-<meta name="pageID" content="orinayo-player"/>
+<title><fmt:message key="admin.sidebar.webclients.item.vchat.description" /></title>
+<meta name="pageID" content="orinayo-vchat"/>
 <style type="text/css">
     #jive-main table, #jive-main-content {
         height: 600px;
@@ -47,9 +47,6 @@
 </style>
 </head>
 <body>
-<div>
-	<a target="_blank" href="<%= url %>">Open Orin Ayo</a>;
-</div>
-<!--iframe frameborder='0' style='border:0px; border-width:0px; margin-left: 0px; margin-top: 0px; margin-right: 0px; margin-bottom: 0px; width:100%;height:100%;' src='<%= url %>'></iframe-->
+<iframe allow='geolocation; microphone; camera' frameborder='0' style='border:0px; border-width:0px; margin-left: 0px; margin-top: 0px; margin-right: 0px; margin-bottom: 0px; width:100%;height:100%;' src='<%= url %>'></iframe>
 </body>
 </html>

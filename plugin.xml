@@ -14,10 +14,10 @@
             <item id="orinayo-summary" name="${config.page.summary}" description="${config.page.summary.description}" url="orinayo-summary.jsp"/>
             <item id="orinayo-settings" name="${config.page.settings}" description="${config.page.settings.description}" url="orinayo-settings.jsp"/>			 			
         </tab>  
-        <tab id="tab-webclients" name="${admin.sidebar.webclients.name}" description="${admin.sidebar.webclients.description}" url="orinayo-player.jsp">
+        <tab id="tab-webclients" name="${admin.sidebar.webclients.name}" description="${admin.sidebar.webclients.description}" url="orinayo-vchat.jsp">
             <sidebar id="tab-orinayo" name="${plugin.title}" description="${plugin.description}">
-                <item id="orinayo-player"  name="${admin.sidebar.webclients.item.player.name}" description="${admin.sidebar.webclients.item.player.description}"  url="orinayo-player.jsp"/>				
-            </sidebar>
+                <item id="orinayo-vchat"  name="${admin.sidebar.webclients.item.vchat.name}" description="${admin.sidebar.webclients.item.vchat.description}"  url="orinayo-vchat.jsp"/>				
+             </sidebar>
         </tab>		
     </adminconsole> 
 </plugin>

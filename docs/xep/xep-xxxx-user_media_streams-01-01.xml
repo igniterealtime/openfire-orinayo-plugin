@@ -45,7 +45,7 @@
   <p>While WebRTC specifies the usage of SDPs [RFC8866] and an Offer/Answer model [RFC3264] for creating connections, WebRTC does not define the precise signaling protocols over which SDPs should be exchanged [RFC8825]. In order to establish a WebRTC session between two WebRTC entities, a signaling protocol is usually used to exchange SDPs</p>
   <p>With HTTP/S applications, WHIP and WHEP have been proposed as simple protocols to ingest and egress media streams using WebRTC.</p>
   <p>This specification provides the means to do likewise in XMPP for communicating user media streams using WebRTC-based ingestion/egress. The WebRTC SDP payload format is transported using IQ stanzas which map directly to WHIP and WHEP REST endpoints.</p>
-  <p>This specification does not prescribe a method for the security, discovery, publishing and subscription of published media stream URIs. It is assumed that this will be achieved with other XMPP mechanisms like &xep0060; or &xep0482; for example.</p>
+  <p>This specification does not prescribe a method for the security, discovery, publishing and subscription of published media stream keys. It is assumed that this will be achieved with other XMPP mechanisms like &xep0060; or &xep0482; for example.</p>
 </section1>
 <section1 topic="Requirements" anchor="reqs">
   <ul>
@@ -84,22 +84,22 @@
 </section1>
 <section1 topic="User Media Streams Workflow" anchor="workflow">
   <section2 topic='User requests server to ingest a media stream' anchor='ingest-media-stream'>   
-    <p>A sample protocol flow to ingest a media session from the client.</p> 
+    <p>A sample protocol flow to ingest a media session from the client. The client MUST provide a WHIP SDP offer and a stream key for the ingest</p> 
     <example caption='Client sends a WHIP SDP offer of a media stream to server'><![CDATA[  
 <iq from='juliet@capulet.lit/producer' id='ih28sx61' type='set'>
-  <whip xmlns='urn:xmpp:whip:0'>
+  <whip xmlns='urn:xmpp:whip:0' key='juliet-ih28sx61'>
     <sdp>
 	  ...... SDP OFFER
     </sdp>
   </whip>
 </iq>	
     ]]></example> 
-	<p>The server responds with a IQ result that contains an external URI for accessing the published media stream.</p>
-	<p>Instead of providing the client with a URI the server MAY respond with an error if the request fails. In addition, the WHIP endpoint entity MAY inform the requester about the reason for the failure.</p>
+	<p>The server responds with a IQ result that contains a WHIP SDP answer.</p>
+	<p>The server MAY respond with an error if the request fails. In addition, the WHIP endpoint entity MAY inform the requester about the reason for the failure.</p>
     <p>Depending on how the WHIP service is configured, the server MAY include a complete SDP answer including ICE candidates or a partial SDP without ICE candidates and later push a patched WHIP SDP with ICE candidates as they trickle in. </p> 	
     <example caption='The server responds with a complete or partial WHIP SDP answer for the client'><![CDATA[  
 <iq to='juliet@capulet.lit/producer' id='ih28sx61' from='shakespeare.lit' type='result'>
-  <whip xmlns='urn:xmpp:whip:0' uri='stream-key:juliet-ih28sx61'>
+  <whip xmlns='urn:xmpp:whip:0'>
     <sdp>  
       ...... SDP ANSWER
     </sdp>	
@@ -108,7 +108,7 @@
     ]]></example> 	
     <example caption='The server pushes a patched WHIP SDP with ICE candidates'><![CDATA[  
 <iq to='juliet@shakespeare.lit/producer' id='87645fg23' from='shakespeare.lit' type='set'>
-  <whip xmlns='urn:xmpp:whip:0' uri='stream-key:juliet-ih28sx61'>
+  <whip xmlns='urn:xmpp:whip:0' key='juliet-ih28sx61'>
     <sdp>  
       ...... SDP PATCH
     </sdp>	
@@ -127,18 +127,18 @@
     ]]></example> 	
   </section2>
   
-  <section2 topic='Client shares the media stream URI with another user' anchor='share-media-stream'> 
-	<p>The client is responsible for publishing the URI to all users permitted to egress the media stream with any suitable XMPP mechanism. In this example, &xep0482; is used.</p>
+  <section2 topic='Client shares the media stream key with another user' anchor='share-media-stream'> 
+	<p>The client is responsible for publishing the stream key to all users permitted to egress the media stream with any suitable XMPP mechanism. In this example, &xep0482; is used.</p>
     <example caption='The media publishing user invites another user to egress the media stream'><![CDATA[  
 <message to='romeo@example.com' id='id1' from='juliet@capulet.lit/producer' type='chat'>
   <invite xmlns='urn:xmpp:call-invites:0'>
-    <external uri='stream-key:juliet-ih28sx61' />
+    <external uri='whep:juliet-ih28sx61' />
   </invite>
 </message>
     ]]></example> 		
     <example caption='The invited user sends an WHEP SDP offer to egress the media stream'><![CDATA[ 
 <iq from='romeo@shakespeare.lit/consumer' id='6338Vbrhrl' type='set'>
-  <whep xmlns='urn:xmpp:whep:0' uri='stream-key:juliet-ih28sx61'>
+  <whep xmlns='urn:xmpp:whep:0' key='juliet-ih28sx61'>
     <sdp>  
       ...... SDP OFFER
     </sdp>		
@@ -147,7 +147,7 @@
     ]]></example> 
     <example caption='The server responds with an WHEP SDP answer for the client and the available WHEP extensions supported'><![CDATA[  
 <iq to='romeo@shakespeare.lit/consumer' id='6338Vbrhrl' from='shakespeare.lit' type='result'>
-  <whep id="ih28sx61" xmlns='urn:xmpp:whep:0'>
+  <whep xmlns='urn:xmpp:whep:0'>
     <sdp>  
       ...... SDP ANSWER
     </sdp>  
@@ -160,7 +160,7 @@
     ]]></example>  
     <example caption='The server pushes a WHEP simulcast layers server-sent event'><![CDATA[  
 <iq to='romeo@shakespeare.lit/consumer' id='3947254qxcf' from='shakespeare.lit' type='set'>
-  <whep id="ih28sx61" xmlns='urn:xmpp:whep:0'>
+  <whep xmlns='urn:xmpp:whep:0' key='juliet-ih28sx61'>
     <ext xmlns='urn:ietf:params:whep:ext:core:server-sent-events'>       
 	  ...... JSON PAYLOAD
     </ext>  
@@ -169,7 +169,7 @@
     ]]></example>  
     <example caption='Client selects a simulcast layer'><![CDATA[ 
 <iq from='romeo@shakespeare.lit/consumer' id='8453sf42' type='set'>
-  <whep id="ih28sx61" xmlns='urn:xmpp:whep:0'>
+  <whep xmlns='urn:xmpp:whep:0' key='juliet-ih28sx61'>
     <ext xmlns='urn:ietf:params:whep:ext:core:layer'>       
 	  ...... JSON PAYLOAD
     </ext> 	
@@ -179,7 +179,7 @@
     <p>Similiar to the WHIP service, the WHEP service may respond with a complete SDP including ICE candidates or may push a patched WHEP SDP with ICE candidates as they trickle in</p> 		
     <example caption='The server pushes a patched WHEP SDP with ICE candidates'><![CDATA[  
 <iq to='romeo@shakespeare.lit/consumer' id='54398hdg21' from='shakespeare.lit' type='set'>
-  <whep id="ih28sx61" xmlns='urn:xmpp:whep:0'>
+  <whep xmlns='urn:xmpp:whep:0' key='juliet-ih28sx61'>
     <sdp>  
       ...... SDP PATCH
     </sdp>	

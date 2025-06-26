@@ -83,10 +83,9 @@ public class WhipIQHandler extends IQHandler implements ServerFeaturesProvider
 			try {
 				Log.debug("Whip handleIQ \n" + iq.toString());
 				final Element whip = iq.getChildElement();
-				final String streamKey = iq.getFrom().getNode() + "-" + iq.getID();
-				final String uri = "stream-key:" + streamKey;
 					
 				if (whip != null) {
+					final String key = whip.attribute("key").getText();						
 					final Element sdp = whip.element("sdp");
 					
 					final Element json = whip.element("json");
@@ -94,7 +93,7 @@ public class WhipIQHandler extends IQHandler implements ServerFeaturesProvider
 					
 					if (json != null) {
 						metaData = new JSONObject(json.getText());	
-						BroadcastBox.self.metaData.put(uri, metaData);
+						BroadcastBox.self.metaData.put(key, metaData);
 					}							
 					
 					if (sdp != null) {
@@ -103,11 +102,11 @@ public class WhipIQHandler extends IQHandler implements ServerFeaturesProvider
 						final String webUrl = "http://" + ipaddr + ":" + tcpPort + "/api/whip";
 						
 						final String offer = sdp.getText();											
-						final String answer = getSDP(webUrl, uri, offer);
+						final String answer = getSDP(webUrl, key, offer);
 						
 						if (answer != null) {
 							final Element childElement = reply.setChildElement(ELEMENT_NAME, NAMESPACE1);
-							childElement.addAttribute("uri", uri);						
+							childElement.addAttribute("key", key);						
 							childElement.addElement("sdp").setText(answer);
 						} else {
 							reply.setError(new PacketError(PacketError.Condition.not_allowed, PacketError.Type.modify, "Service not available"));							

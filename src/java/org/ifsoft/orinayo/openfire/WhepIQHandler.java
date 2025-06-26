@@ -84,13 +84,13 @@ public class WhepIQHandler extends IQHandler implements ServerFeaturesProvider
 
 				if (iq.getType() == IQ.Type.set) {
 					final Element sdp = whep.element("sdp");
-					final String uri = whep.attribute("uri").getText();						
+					final String key = whep.attribute("key").getText();						
 					final String offer = sdp.getText();					
-					final String answer = fetch("http://" + ipaddr + ":" + tcpPort + "/api/whep", uri, offer, "POST");
+					final String answer = fetch("http://" + ipaddr + ":" + tcpPort + "/api/whep", key, offer, "POST");
 					final Element childElement = reply.setChildElement(ELEMENT_NAME, NAMESPACE1);					
 					childElement.addElement("sdp").setText(answer);
 					
-					final JSONObject metaData = BroadcastBox.self.metaData.get(uri);
+					final JSONObject metaData = BroadcastBox.self.metaData.get(key);
 					
 					if (metaData != null) {
 						childElement.addElement("json", "urn:xmpp:json:0").setText(metaData.toString());
@@ -114,9 +114,9 @@ public class WhepIQHandler extends IQHandler implements ServerFeaturesProvider
 					*/					
 					for (int i=0; i<streams.length(); i++)	{
 						final JSONObject stream = streams.getJSONObject(i);
-						final String uri = stream.getString("streamKey");
+						final String key = stream.getString("streamKey");
 						final Element item = childElement.addElement("item");						
-						item.addAttribute("uri", uri);												
+						item.addAttribute("key", key);												
 					}
 				}								
 			}

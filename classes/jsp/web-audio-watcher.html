@@ -9,7 +9,6 @@
   </head>
 
   <body>
-    <b> Stream Key </b> <input type="text" id="streamKey" /> <br />
     <button onclick="window.watchStream()"> Watch Stream </button>
 
     <h3> Audio </h3>
@@ -20,40 +19,31 @@
   </body>
 
   <script>
-    window.watchStream = () => {
-      const whepURL = location.origin + "/orinayo/api/whep";
-      const streamKey = document.getElementById('streamKey').value
- 
-      if (streamKey === '') {
-        return window.alert('Stream Key must not be empty')
-      }
+    window.watchStream = async () => {
+      const statusURL = location.origin + "/orinayo/api/status";	  	  
+	  const resp = await fetch(statusURL);
+	  const streams = await resp.json();
+      const streamKey = streams[0].streamKey;	  
 
       let peerConnection = new RTCPeerConnection()
       peerConnection.addTransceiver('audio', { direction: 'recvonly' })
 
       peerConnection.ontrack = function (event) {
         document.getElementById('audioPlayer').srcObject = event.streams[0]
+		console.debug("watch stream", streamKey, event.streams[0].id);		
       }
 
       peerConnection.oniceconnectionstatechange = () => {
         document.getElementById('connectionState').innerText = peerConnection.iceConnectionState;
       }
+	  
+	  const offer = await peerConnection.createOffer();
+	  peerConnection.setLocalDescription(offer)
 
-      peerConnection.createOffer().then(offer => {
-        peerConnection.setLocalDescription(offer)
-
-        fetch(whepURL, {
-          method: 'POST',
-          body: offer.sdp,
-          headers: {Authorization: `Bearer ${streamKey}`, 'Content-Type': 'application/sdp'}
-        }).then(r => r.text())
-          .then(answer => {
-            peerConnection.setRemoteDescription({
-              sdp: answer,
-              type: 'answer'
-            })
-          })
-      })
+      const whepURL = location.origin + "/orinayo/api/whep";
+	  const resp2 = await fetch(whepURL, {method: 'POST', body: offer.sdp, headers: {Authorization: `Bearer ${streamKey}`, 'Content-Type': 'application/sdp'}});
+	  const answer = await resp2.text();
+	  peerConnection.setRemoteDescription({sdp: answer,  type: 'answer'});	  
     }
   </script>
 </html>

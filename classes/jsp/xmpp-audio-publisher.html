@@ -24,7 +24,8 @@
 		window.connection = new Strophe.Connection(location.protocol.replace("http", "ws") + "//" + location.host + "/ws/");	
 
 		window.connection.connect(location.hostname, null, async function (status) {
-			console.debug("XMPPConnection.connect", status);
+			const streamKey = crypto.randomUUID();
+			console.debug("XMPPConnection.connect", status, streamKey);
 
 			if (status === Strophe.Status.CONNECTED)  {
 				window.connection.send($pres());
@@ -49,12 +50,11 @@
 				const offer = await peerConnection.createOffer();
 				peerConnection.setLocalDescription(offer);
 				
-				window.connection.sendIQ($iq({type: 'set', to: window.connection.domain}).c('whip', {xmlns: 'urn:xmpp:whip:0'}).c('sdp', offer.sdp), 
+				window.connection.sendIQ($iq({type: 'set', to: window.connection.domain}).c('whip', {xmlns: 'urn:xmpp:whip:0', key: streamKey}).c('sdp', offer.sdp), 
 					function (res)  {
-						const uri = res.querySelector('whip').getAttribute("uri");
 						const answer = res.querySelector('sdp').innerHTML;
 						peerConnection.setRemoteDescription({sdp: answer,  type: 'answer'});	
-						console.debug('whip answer', uri, answer);			
+						console.debug('whip answer', answer);			
 
 					}, function (err) {
 						console.warn('whip failed', err);
@@ -68,5 +68,6 @@
 			}
 		});			
 	}
+	
   </script>
 </html>

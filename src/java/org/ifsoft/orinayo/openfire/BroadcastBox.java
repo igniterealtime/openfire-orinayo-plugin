@@ -221,6 +221,11 @@ public class BroadcastBox implements Plugin, PropertyEventListener, ProcessListe
 		proxyWhep.setInitParameter("prefix", "/");
 		jspService.addServlet(proxyWhep, "/api/whep/*");		
  
+		ServletHolder proxyStatus = new ServletHolder(ProxyServlet.Transparent.class);
+		proxyStatus.setInitParameter("proxyTo", webUrl);
+		proxyStatus.setInitParameter("prefix", "/");
+		jspService.addServlet(proxyStatus, "/api/status/*");
+
         Log.debug("BroadcastBox jsp service enabled");
         HttpBindManager.getInstance().addJettyHandler(jspService);
     }
@@ -239,20 +244,20 @@ public class BroadcastBox implements Plugin, PropertyEventListener, ProcessListe
 			Engine.environment.put("APP_ENV", "production");
 			Engine.environment.put("HTTP_ADDRESS", ipaddr + ":" + tcpPort);
 			Engine.environment.put("HTTP_PUBLIC_HOST", publicHost);
-			Engine.environment.put("UDP_MUX_PORT_WHEP", udpPort);
-			Engine.environment.put("UDP_MUX_PORT_WHIP", udpPort);			
-			Engine.environment.put("UDP_MUX_PORT", udpPort);
-			Engine.environment.put("NETWORK_TEST_ON_START", "false");
-			Engine.environment.put("INCLUDE_PUBLIC_IP_IN_NAT_1_TO_1_IP", "true");	
+			//Engine.environment.put("INTERFACE_FILTER", "eth0"); 		
+			//Engine.environment.put("NETWORK_TYPES", "udp4");
+			Engine.environment.put("UDP_MUX_PORT", udpPort);			
+			Engine.environment.put("NETWORK_TEST_ON_START", "false");	
 			Engine.environment.put("DEBUG_PRINT_OFFER", "true");			
 			Engine.environment.put("DEBUG_PRINT_ANSWER ", "true");			
 			
 			if (publicIpaddr != null && !publicIpaddr.trim().equals("")) {
-				Engine.environment.put("NAT_1_TO_1_IP", publicIpaddr);
+				Engine.environment.put("APPEND_CANDIDATE", "a=candidate:4167977883 1 udp 2130706431 " + publicIpaddr + " " + udpPort + " typ host ufrag mozzDGRqaVbksZdg\n");	
+			} else {
+				Engine.environment.put("STUN_SERVERS", "stun.l.google.com:19302|stun.freeswitch.org:3478|stun.3cx.com:3478");											
+				Engine.environment.put("NAT_ICE_CANDIDATE_TYPE", "srflx"); 					
 			}
-            
-			Engine.environment.put("STUN_SERVERS", "stun1.l.google.com:19305|stun1.l.google.com:19302|stun4.l.google.com:19302|stun.frozenmountain.com:3478|stun.freeswitch.org:3478");			
-
+			
  			orinayoThread = Spawn.startProcess(orinayoExePath, new File(orinayoHomePath), this);	
             Log.info("BroadcastBox enabled " + orinayoExePath);
 
