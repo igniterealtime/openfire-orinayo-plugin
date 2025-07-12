@@ -99,7 +99,7 @@
     <p>Depending on how the WHIP service is configured, the server MAY include a complete SDP answer including ICE candidates or a partial SDP without ICE candidates and later push a patched WHIP SDP with ICE candidates as they trickle in. </p> 	
     <example caption='The server responds with a complete or partial WHIP SDP answer for the client'><![CDATA[  
 <iq to='juliet@capulet.lit/producer' id='ih28sx61' from='shakespeare.lit' type='result'>
-  <whip xmlns='urn:xmpp:whip:0'>
+  <whip xmlns='urn:xmpp:whip:0' key='juliet-ih28sx61'>
     <sdp>  
       ...... SDP ANSWER
     </sdp>	
@@ -117,7 +117,7 @@
     ]]></example> 	
     <example caption='Alternative response by the server if media streaming is restricted for the requestor'><![CDATA[  
 <iq to='juliet@shakespeare.lit/producer' id='87645fg23' from='shakespeare.lit' type='error'>
-  <whip xmlns='urn:xmpp:whip:0'>
+  <whip xmlns='urn:xmpp:whip:0' key='juliet-ih28sx61'>
 	  <error type='modify'>
 		<not-acceptable xmlns='urn:ietf:params:xml:ns:xmpp-stanzas'/>
 		<text xmlns='urn:ietf:params:xml:ns:xmpp-stanzas'>Streaming is in use</text>
@@ -147,7 +147,7 @@
     ]]></example> 
     <example caption='The server responds with an WHEP SDP answer for the client and the available WHEP extensions supported'><![CDATA[  
 <iq to='romeo@shakespeare.lit/consumer' id='6338Vbrhrl' from='shakespeare.lit' type='result'>
-  <whep xmlns='urn:xmpp:whep:0'>
+  <whep xmlns='urn:xmpp:whep:0' key='juliet-ih28sx61'>
     <sdp>  
       ...... SDP ANSWER
     </sdp>  

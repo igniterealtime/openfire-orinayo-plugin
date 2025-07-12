@@ -225,7 +225,7 @@ public class BroadcastBox implements Plugin, PropertyEventListener, ProcessListe
 		proxyStatus.setInitParameter("proxyTo", webUrl);
 		proxyStatus.setInitParameter("prefix", "/");
 		jspService.addServlet(proxyStatus, "/api/status/*");
-
+		
         Log.debug("BroadcastBox jsp service enabled");
         HttpBindManager.getInstance().addJettyHandler(jspService);
     }

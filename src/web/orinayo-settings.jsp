@@ -51,7 +51,7 @@
 <% } %>
 
 <div class="jive-table">
-<form action="broadcast-box-settings.jsp" method="post">
+<form action="orinayo-settings.jsp" method="post">
     <p>
         <table class="jive-table" cellpadding="0" cellspacing="0" border="0" width="100%">
             <thead> 
@@ -78,8 +78,7 @@
                 <td align="left" width="150">
                     <fmt:message key="config.page.configuration.ipaddr.public"/>
                 </td>
-                <td><input type="text" size="50" maxlength="100" name="ipaddr_public" required
-                       value="<%= JiveGlobals.getProperty("orinayo.ipaddr.public", plugin.getPublicIpAddress()) %>">
+                <td><input type="text" size="50" maxlength="100" name="ipaddr_public" value="<%= JiveGlobals.getProperty("orinayo.ipaddr.public", plugin.getPublicIpAddress()) %>">
                 </td>                               
             </tr>                   
             <tr>

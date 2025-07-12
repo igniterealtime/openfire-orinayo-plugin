@@ -22,7 +22,19 @@
 
 	<filter-mapping>
 		<filter-name>OhunRedirectFilter</filter-name>
-		<url-pattern>/*</url-pattern>
+		<url-pattern>/ohun/*</url-pattern>
+		<dispatcher>REQUEST</dispatcher>
+	</filter-mapping>	
+	
+	<filter>
+		<filter-name>OjuRedirectFilter</filter-name>
+		<filter-class>org.ifsoft.orinayo.openfire.OjuRedirectFilter</filter-class>
+        <async-supported>true</async-supported>			
+	</filter>
+
+	<filter-mapping>
+		<filter-name>OjuRedirectFilter</filter-name>
+		<url-pattern>/oju/*</url-pattern>
 		<dispatcher>REQUEST</dispatcher>
 	</filter-mapping>	
 

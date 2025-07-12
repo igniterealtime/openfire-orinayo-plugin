@@ -72,7 +72,7 @@ public class OhunRedirectFilter implements Filter
         }
 
         if (uri.contains("/chordpro-pdf-online")) return true;
-
+        if (uri.contains("/oju")) return true;
 
         return false;
     }
