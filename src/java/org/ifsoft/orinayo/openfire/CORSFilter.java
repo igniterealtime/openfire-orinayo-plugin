@@ -28,16 +28,15 @@ public class CORSFilter implements Filter {
 	public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain chain)	throws IOException, ServletException {
 		HttpServletRequest request = (HttpServletRequest) servletRequest;
 		Log.debug("CORSFilter HTTP Request: " + request.getMethod());
-
-		if (request.getMethod().equals("OPTIONS")) {
-			((HttpServletResponse) servletResponse).addHeader("Access-Control-Allow-Private-Network", "true");
-			((HttpServletResponse) servletResponse).addHeader("Access-Control-Allow-Origin", "*");
-			((HttpServletResponse) servletResponse).addHeader("Access-Control-Allow-Headers", "*");
-			((HttpServletResponse) servletResponse).addHeader("Access-Control-Request-Headers", "*");
-			((HttpServletResponse) servletResponse).addHeader("Access-Control-Allow-Methods","GET, OPTIONS, HEAD, PUT, POST");
-			
-			HttpServletResponse resp = (HttpServletResponse) servletResponse;
-			
+		
+		((HttpServletResponse) servletResponse).addHeader("Access-Control-Allow-Private-Network", "true");
+		((HttpServletResponse) servletResponse).addHeader("Access-Control-Allow-Origin", "*");
+		((HttpServletResponse) servletResponse).addHeader("Access-Control-Allow-Headers", "*");
+		((HttpServletResponse) servletResponse).addHeader("Access-Control-Request-Headers", "*");
+		((HttpServletResponse) servletResponse).addHeader("Access-Control-Allow-Methods","GET, OPTIONS, HEAD, PUT, POST");
+		
+		if (request.getMethod().equals("OPTIONS")) {			
+			HttpServletResponse resp = (HttpServletResponse) servletResponse;			
 			resp.setStatus(HttpServletResponse.SC_ACCEPTED);
 			return;
 		}

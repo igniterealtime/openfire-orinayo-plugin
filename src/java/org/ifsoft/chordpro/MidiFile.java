@@ -303,6 +303,14 @@ public class MidiFile {
 	track.add(midiEvent) ;
     }
 
+    // Add a MIDI text meta event
+    public void addText(String text, long ticks) throws InvalidMidiDataException {
+		MetaMessage textMsg = new MetaMessage() ;
+		textMsg.setMessage(0x01, text.getBytes(), text.length()) ;
+		MidiEvent midiEvent = new MidiEvent(textMsg, (long)ticks) ;
+		track.add(midiEvent) ;
+    }
+	
     // Add a MIDI lyric meta event
     public void addLyric(String lyric, long ticks)
 	throws InvalidMidiDataException {

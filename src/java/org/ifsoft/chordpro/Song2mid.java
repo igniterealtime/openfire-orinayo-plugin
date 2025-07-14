@@ -350,9 +350,10 @@ public class Song2mid {
 	} else if (dir.equals("comment") || dir.equals("c")) {
 	    // Comment; Generate a lyric page break
 	    try {
-		m.addPageBreak(timeStamp + ticksPerDivision) ;
+			m.addPageBreak(timeStamp + ticksPerDivision) ;
+			m.addText("comment:" + e.elementValue.trim(), timeStamp + ticksPerDivision) ;
 	    } catch(Exception exc) {
-		Log.error("Couldn't add page break (comment)") ;
+			Log.error("Couldn't add page break (comment)") ;
 	    }
 	} else if (dir.equals("start_of_chorus") || dir.equals("soc")) {
 	    // Start of chorus; Generate a lyric page break
