@@ -18,7 +18,7 @@
     </properties>
 
     <name>Orin Ayo</name>
-    <description>MIDI Events and Media Streams Publish-Subscribe</description>
+    <description>Media Streams Ingestion/Egress</description>
     <build>
         <sourceDirectory>src/java</sourceDirectory> 
         <plugins> 	
