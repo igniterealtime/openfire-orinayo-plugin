@@ -7,12 +7,12 @@
     <parent>
         <artifactId>plugins</artifactId>
         <groupId>org.igniterealtime.openfire</groupId>
-        <version>5.0.0-beta</version>
+        <version>5.0.0</version>
     </parent>
     
     <groupId>org.igniterealtime.openfire</groupId>
     <artifactId>orinayo</artifactId>
-    <version>1.0.1</version>
+    <version>1.0.2-SNAPSHOT</version>
     
     <properties>      
     </properties>
