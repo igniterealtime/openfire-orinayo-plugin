@@ -99,7 +99,7 @@ public class BroadcastBox implements Plugin, PropertyEventListener, ProcessListe
 			if (midiServer != null) midiServer.stop();
 
 			jspService.destroy();
-
+			//Http3BindManager.getInstance().stop();	
             Log.debug("orinayo terminated - completed");
         }
         catch (Exception e) {
@@ -145,7 +145,9 @@ public class BroadcastBox implements Plugin, PropertyEventListener, ProcessListe
 		//midiServer.addAppleMidiSession(new MidiReceiverAppleMidiSession(this));		
 		//midiServer.start();		
 		
-        self = this;							
+        self = this;	
+        //Http3BindManager.getInstance().pluginDirectory = pluginDirectory;		
+        //Http3BindManager.getInstance().start();			
         Log.debug("orinayo initiated");
     }
 

@@ -1,0 +1,942 @@
+/*
+ * Copyright (C) 2005-2008 Jive Software, 2017-2025 Ignite Realtime Foundation. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.ifsoft.orinayo.openfire;
+
+import org.apache.tomcat.InstanceManager;
+import org.apache.tomcat.SimpleInstanceManager;
+
+import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
+import org.eclipse.jetty.ee8.nested.ContextHandler;
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
+import org.eclipse.jetty.quic.server.ServerQuicConfiguration;
+import org.eclipse.jetty.quic.server.QuicServerConnector;
+import org.eclipse.jetty.http3.server.HTTP3ServerConnectionFactory;
+import org.eclipse.jetty.server.*;
+import org.eclipse.jetty.server.Handler.Sequence;
+import org.eclipse.jetty.server.handler.gzip.GzipHandler;
+import org.eclipse.jetty.ee8.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee8.servlet.ServletHolder;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.eclipse.jetty.ee8.webapp.WebAppContext;
+import org.eclipse.jetty.ee8.websocket.server.config.JettyWebSocketServletContainerInitializer;
+
+import org.jivesoftware.openfire.Connection;
+import org.jivesoftware.openfire.ConnectionManager;
+import org.jivesoftware.openfire.JMXManager;
+import org.jivesoftware.openfire.XMPPServer;
+import org.jivesoftware.openfire.keystore.CertificateStore;
+import org.jivesoftware.openfire.keystore.IdentityStore;
+import org.jivesoftware.openfire.spi.ConnectionConfiguration;
+import org.jivesoftware.openfire.spi.ConnectionType;
+import org.jivesoftware.openfire.spi.EncryptionArtifactFactory;
+import org.jivesoftware.openfire.websocket.OpenfireWebSocketServlet;
+import org.jivesoftware.util.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.annotation.Nonnull;
+import javax.servlet.DispatcherType;
+import java.io.File;
+import java.nio.file.Path;
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
+import java.util.*;
+import org.jivesoftware.openfire.http.*;
+
+/**
+ * Responsible for making available QUIC (functionality to the outside world, using an embedded web server.
+ */
+public final class Http3BindManager implements CertificateEventListener {
+
+    private static final Logger Log = LoggerFactory.getLogger(Http3BindManager.class);
+	public File pluginDirectory;
+
+    /**
+     * Enable / disable logging of QUIC requests and responses.
+     */
+    public static final SystemProperty<Boolean> LOG_HTTPBIND_ENABLED = SystemProperty.Builder.ofType(Boolean.class)
+        .setKey("log.http3bind.enabled")
+        .setDynamic(true)
+        .setDefaultValue(false)
+        .build();
+
+    /**
+     * Enable / disable QUIC (HTTP3 Binding) functionality.
+     */
+    public static final SystemProperty<Boolean> HTTP_BIND_ENABLED = SystemProperty.Builder.ofType(Boolean.class)
+        .setKey("http3bind.enabled")
+        .setDynamic(true)
+        .setDefaultValue(true)
+        .addListener(Http3BindManager::restart)
+        .build();
+
+    /**
+     * TCP port on which the non-encrypted (HTTP3) QUIC endpoint is exposed.
+     */
+    public static final SystemProperty<Integer> HTTP_BIND_PORT = SystemProperty.Builder.ofType(Integer.class)
+        .setKey("http3bind.port.plain")
+        .setDynamic(true)
+        .setDefaultValue(8080)
+        .addListener(Http3BindManager::restart)
+        .build();
+
+    /**
+     * TCP port on which the encrypted (HTTPS) QUIC endpoint is exposed.
+     */
+    public static final SystemProperty<Integer> HTTP_BIND_SECURE_PORT = SystemProperty.Builder.ofType(Integer.class)
+        .setKey("http3bind.port.secure")
+        .setDynamic(true)
+        .setDefaultValue(8443)
+        .addListener(Http3BindManager::restart)
+        .build();
+
+    /**
+     * Minimum amount of threads in the thread pool to perform the network IO related to QUIC traffic.
+     *
+     * Note: Apart from the network-IO threads configured in this property, the server also uses a thread pool for
+     * processing the inbound data (as configured in ({@link HttpSessionManager#MAX_POOL_SIZE}). QUIC
+     * installations expecting heavy loads may want to allocate additional threads to this worker pool to ensure timely
+     * processing of data
+     */
+    public static final SystemProperty<Integer> HTTP_BIND_THREADS_MIN = SystemProperty.Builder.ofType(Integer.class)
+        .setKey("http3bind.client.processing.threads-min")
+        .setDynamic(false) // TODO This can easily be made dynamic with <tt>.addListener(Http3BindManager.getInstance()::restartServer)</tt>. Existing implementation was not dynamic. Should it?
+        .setDefaultValue(8)
+        .setMinValue(1)
+        .build();
+
+    /**
+     * Maximum amount of threads in the thread pool to perform the network IO related to QUIC traffic.
+     *
+     * Note: Apart from the network-IO threads configured in this property, the server also uses a thread pool for
+     * processing the inbound data (as configured in ({@link HttpSessionManager#MAX_POOL_SIZE}). QUIC
+     * installations expecting heavy loads may want to allocate additional threads to this worker pool to ensure timely
+     * processing of data
+     */
+    public static final SystemProperty<Integer> HTTP_BIND_THREADS = SystemProperty.Builder.ofType(Integer.class)
+        .setKey("http3bind.client.processing.threads")
+        .setDynamic(false) // TODO This can easily be made dynamic with <tt>.addListener(Http3BindManager.getInstance()::restartServer)</tt>. Existing implementation was not dynamic. Should it?
+        .setDefaultValue(200)
+        .setMinValue(1)
+        .build();
+
+    /**
+     * Amount of time after which idle, surplus threads are removed from the thread pool to perform the network IO
+     * related to QUIC traffic.
+     *
+     * Note: Apart from the network-IO threads configured in this property, the server also uses a thread pool for
+     * processing the inbound data (as configured in ({@link HttpSessionManager#INACTIVITY_TIMEOUT}). QUIC
+     * installations expecting heavy loads may want to allocate additional threads to this worker pool to ensure timely
+     * processing of data
+     */
+    public static final SystemProperty<Duration> HTTP_BIND_THREADS_TIMEOUT = SystemProperty.Builder.ofType(Duration.class)
+        .setKey("http3bind.client.processing.threads-timeout")
+        .setDynamic(false) // TODO This can easily be made dynamic with <tt>.addListener(Http3BindManager.getInstance()::restartServer)</tt>. Existing implementation was not dynamic. Should it?
+        .setDefaultValue(Duration.ofSeconds(60))
+        .setChronoUnit(ChronoUnit.MILLIS)
+        .setMaxValue(Duration.ofMillis(Integer.MAX_VALUE)) // Jetty takes an int value, not a long.
+        .build();
+
+    /**
+     * The TLS 'mutual authentication' policy that is applied to the QUIC endpoint.
+     */
+    // Ideally, this would be a property of the Connection.ClientAuth enum, but we need to be able to set a 'null' default value (as that will cause a dynamic default to be calculated). Using the dynamic default calculation in this SystemProperty does not work, as it throws NullPointerExceptions during server startup.
+    public static final SystemProperty<String> HTTP_BIND_AUTH_PER_CLIENTCERT_POLICY = SystemProperty.Builder.ofType(String.class)
+        .setKey("http3bind.client.cert.policy")
+        .setDynamic(true)
+        .setDefaultValue(null)
+        .addListener(Http3BindManager::restart)
+        .build();
+
+    /**
+     * Enable / Disable parsing a 'X-Forwarded-For' style HTTP header of QUIC requests.
+     */
+    public static final SystemProperty<Boolean> HTTP_BIND_FORWARDED = SystemProperty.Builder.ofType(Boolean.class)
+        .setKey("http3bind.forwarded.enabled")
+        .setDynamic(false) // TODO This can easily be made dynamic with <tt>.addListener(Http3BindManager.getInstance()::restartServer)</tt>. Existing implementation was not dynamic. Should it?
+        .setDefaultValue(false)
+        .build();
+
+    /**
+     * The HTTP header name for 'forwarded for'
+     */
+    public static final SystemProperty<String> HTTP_BIND_FORWARDED_FOR = SystemProperty.Builder.ofType(String.class)
+        .setKey("http3bind.forwarded.for.header")
+        .setDynamic(false) // TODO This can easily be made dynamic with <tt>.addListener(Http3BindManager.getInstance()::restartServer)</tt>. Existing implementation was not dynamic. Should it?
+        .setDefaultValue(HttpHeader.X_FORWARDED_FOR.toString())
+        .build();
+
+    /**
+     * The HTTP header name for 'forwarded server'.
+     */
+    public static final SystemProperty<String> HTTP_BIND_FORWARDED_SERVER = SystemProperty.Builder.ofType(String.class)
+        .setKey("http3bind.forwarded.server.header")
+        .setDynamic(false) // TODO This can easily be made dynamic with <tt>.addListener(Http3BindManager.getInstance()::restartServer)</tt>. Existing implementation was not dynamic. Should it?
+        .setDefaultValue(HttpHeader.X_FORWARDED_SERVER.toString())
+        .build();
+
+    /**
+     * The HTTP header name for 'forwarded hosts'.
+     */
+    public static final SystemProperty<String> HTTP_BIND_FORWARDED_HOST = SystemProperty.Builder.ofType(String.class)
+        .setKey("http3bind.forwarded.host.header")
+        .setDynamic(false) // TODO This can easily be made dynamic with <tt>.addListener(Http3BindManager.getInstance()::restartServer)</tt>. Existing implementation was not dynamic. Should it?
+        .setDefaultValue(HttpHeader.X_FORWARDED_HOST.toString())
+        .build();
+
+    /**
+     * Sets a forced valued for the host header.
+     */
+    public static final SystemProperty<String> HTTP_BIND_FORWARDED_HOST_NAME = SystemProperty.Builder.ofType(String.class)
+        .setKey("http3bind.forwarded.host.name")
+        .setDynamic(false) // TODO This can easily be made dynamic with <tt>.addListener(Http3BindManager.getInstance()::restartServer)</tt>. Existing implementation was not dynamic. Should it?
+        .setDefaultValue(null)
+        .build();
+
+    // http binding CORS default properties
+
+    /**
+     * Enable / Disable support for Cross-Origin Resource Sharing (CORS) headers in the QUIC endpoint.
+     */
+    public static final SystemProperty<Boolean> HTTP_BIND_CORS_ENABLED = SystemProperty.Builder.ofType(Boolean.class)
+        .setKey("http3bind.CORS.enabled")
+        .setDynamic(false)  // TODO This can easily be made dynamic with <tt>.addListener(Http3BindManager.getInstance()::restartServer)</tt>. Existing implementation was not dynamic. Should it?
+        .setDefaultValue(true)
+        .build();
+
+    /**
+     * The Cross-Origin Resource Sharing (CORS) header value that represents the 'allow all orgins' state.
+     */
+    public static final String HTTP_BIND_CORS_ALLOW_ORIGIN_ALL = "*";
+
+    /**
+     * The domain names that are accepted as values for the CORS 'Origin' header in the QUIC endpoint.
+     */
+    public static final SystemProperty<Set<String>> HTTP_BIND_ALLOWED_ORIGINS = SystemProperty.Builder.ofType(Set.class)
+        .setKey("http3bind.CORS.domains")
+        .setDynamic(true)
+        .setDefaultValue(Collections.singleton(HTTP_BIND_CORS_ALLOW_ORIGIN_ALL))
+        .buildSet(String.class);
+
+    /**
+     * Enable / Disable adding a 'Content-Security-Policy' HTTP header to the response to requests made against the QUIC endpoint.
+     */
+    public static final SystemProperty<Boolean> HTTP_BIND_CONTENT_SECURITY_POLICY_ENABLED = SystemProperty.Builder.ofType(Boolean.class)
+        .setKey("http3bind.CSP.enabled")
+        .setDynamic(true)
+        .setDefaultValue(true)
+        .build();
+
+    /**
+     * The header value when adding a 'Content-Security-Policy' HTTP header to the response to requests made against the QUIC endpoint.
+     */
+    public static final SystemProperty<String> HTTP_BIND_CONTENT_SECURITY_POLICY_RESPONSEVALUE = SystemProperty.Builder.ofType(String.class)
+        .setKey("http3bind.CSP.responsevalue")
+        .setDynamic(true)
+        .setDefaultValue("default-src 'none'; style-src 'self' 'unsafe-inline'; connect-src 'self'; base-uri 'self'; form-action 'none';")
+        .build();
+
+    /**
+     * The HTTP methods that are accepted in the QUIC endpoint.
+     */
+    public static final SystemProperty<Set<String>> HTTP_BIND_CORS_ALLOW_METHODS = SystemProperty.Builder.ofType(Set.class)
+        .setKey("http3bind.CORS.methods")
+        .setDynamic(true)
+        .setDefaultValue(new HashSet<>(Arrays.asList("PROPFIND", "PROPPATCH", "COPY", "MOVE", "DELETE", "MKCOL", "LOCK", "UNLOCK", "PUT", "GETLIB", "VERSION-CONTROL", "CHECKIN", "CHECKOUT", "UNCHECKOUT", "REPORT", "UPDATE", "CANCELUPLOAD", "HEAD", "OPTIONS", "GET", "POST")) )
+        .buildSet(String.class);
+
+    /**
+     * The name of HTTP headers that are accepted in requests to the QUIC endpoint.
+     */
+    public static final SystemProperty<Set<String>> HTTP_BIND_CORS_ALLOW_HEADERS = SystemProperty.Builder.ofType(Set.class)
+        .setKey("http3bind.CORS.headers")
+        .setDynamic(true)
+        .setDefaultValue(new HashSet<>(Arrays.asList("Overwrite", "Destination", "Content-Type", "Depth", "User-Agent", "X-File-Size", "X-Requested-With", "If-Modified-Since", "X-File-Name", "Cache-Control")) )
+        .buildSet(String.class);
+
+    /**
+     * How long the results of a preflight request (that is the information contained in the Access-Control-Allow-Methods and Access-Control-Allow-Headers headers) can be cached.
+     */
+    public static final SystemProperty<Duration> HTTP_BIND_CORS_MAX_AGE = SystemProperty.Builder.ofType(Duration.class)
+        .setKey("http3bind.CORS.max_age")
+        .setDynamic(true)
+        .setDefaultValue(Duration.ofDays(1))
+        .setChronoUnit(ChronoUnit.SECONDS)
+        .build();
+
+    /**
+     * the maximum size in bytes of request headers in the QUIC endpoint. Larger headers will allow for more and/or
+     * larger cookies plus larger form content encoded in a URL. However, larger headers consume more memory and can
+     * make a server more vulnerable to denial of service attacks.
+     */
+    public static final SystemProperty<Integer> HTTP_BIND_REQUEST_HEADER_SIZE = SystemProperty.Builder.ofType(Integer.class)
+        .setKey("http3bind.request.header.size")
+        .setDynamic(true)
+        .setDefaultValue(32768)
+        .build();
+
+    private static Http3BindManager instance;
+
+    private Server httpBindServer;
+
+    private final HttpSessionManager httpSessionManager;
+
+    /**
+     * An ordered collection of all handlers (that is created to include the #extensionHandlers).
+     *
+     * A reference to this collection is maintained outside of the Jetty server implementation ({@link #httpBindServer})
+     * as its lifecycle differs from that server: the server is recreated upon configuration changes, while the
+     * collection of handlers need not be.
+     *
+     * This collection is ordered, which ensures that:
+     * <ul>
+     *     <li>The handlers providing QUIC functionality are tried first.</li>
+     *     <li>Any handlers that are registered by external sources ({@link #extensionHandlers}) are tried in between.</li>
+     *     <li>The 'catch-all' handler that maps to static content is tried last.</li>
+     * </ul>
+     *
+     * This collection should be regarded as immutable. When handlers are to be added/removed dynamically, this should
+     * occur in {@link #extensionHandlers}, to which a reference is stored in this list by the constructor of this class.
+     */
+    private final Sequence handlerList = new Sequence();
+
+    /**
+     * Contains all Jetty handlers that are added as an extension.
+     *
+     * This collection is mutable. Handlers can be added and removed at runtime.
+     */
+    private final Sequence extensionHandlers = new Sequence();
+
+    /**
+     * A task that, periodically, updates the 'last modified' date of all files in the Jetty 'tmp' directories. This
+     * prevents operating systems from removing files that are deemed unused.
+     *
+     * @see <a href="https://igniterealtime.atlassian.net/browse/OF-1534">OF-1534</a>
+     */
+    private TempFileToucherTask tempFileToucherTask;
+
+    public static synchronized Http3BindManager getInstance() {
+        if (instance == null) {
+            instance = new Http3BindManager();
+        }
+        return instance;
+    }
+
+    private Http3BindManager() {
+        this.httpSessionManager = new HttpSessionManager();
+    }
+
+    public void start() {
+
+        if (!HTTP_BIND_ENABLED.getValue()) {
+            return;
+        }		
+
+        final ServletContextHandler staticContentHandler = createStaticContentHandler();
+		
+        if ( staticContentHandler != null )  {
+            this.handlerList.addHandler( staticContentHandler );
+        }		
+
+        final QueuedThreadPool tp = new QueuedThreadPool(HTTP_BIND_THREADS.getValue(), HTTP_BIND_THREADS_MIN.getValue(), (int) HTTP_BIND_THREADS_TIMEOUT.getValue().toMillis());
+        tp.setName("Jetty-QTP-QUIC");
+
+        httpBindServer = new Server(tp);
+/*		
+        if (JMXManager.isEnabled()) {
+            JMXManager jmx = JMXManager.getInstance();
+            httpBindServer.addBean(jmx.getContainer());
+        }
+*/
+		final Connector http3Connector = createHTTP3Connector( httpBindServer);
+        final Connector httpsConnector = createSSLConnector( httpBindServer);
+        final Connector httpConnector = createConnector( httpBindServer);
+		
+        if (httpConnector == null && httpsConnector == null) {
+            httpBindServer = null;
+            return;
+        }
+        if (httpConnector != null) {
+            httpBindServer.addConnector(httpConnector);
+        }
+        if (httpsConnector != null) {
+            httpBindServer.addConnector(httpsConnector);
+        }
+
+        if (http3Connector != null) {
+            httpBindServer.addConnector(http3Connector);
+        }			
+
+        httpBindServer.setHandler( handlerList );
+
+        try {			
+            httpBindServer.start();
+
+            if (handlerList.getHandlers() != null) {
+                Arrays.stream(handlerList.getHandlers().toArray()).forEach(handler  -> {
+                    try {
+                        ((Handler)handler).start();
+                    } catch (Exception e) {
+                        Log.warn("An exception occurred while trying to start handler: {}", handler, e);
+                    }
+                });
+            }
+            handlerList.start();
+
+            if ( extensionHandlers.getHandlers() != null ) {
+                Arrays.stream(handlerList.getHandlers().toArray()).forEach(handler  -> {
+                    try {
+                        ((Handler)handler).start();
+                    } catch (Exception e) {
+                        Log.warn("An exception occurred while trying to start extension handler: {}", handler, e);
+                    }
+                });
+            }
+            extensionHandlers.start();
+
+            CertificateManager.addListener(this);
+
+            Log.info("HTTP3 bind service started");
+        }
+        catch (Exception e) {
+            Log.error("Error starting HTTP3 bind service", e);
+        }
+
+/*
+        if ( JiveGlobals.getBooleanProperty( "jetty.temp-file-toucher.enabled", true ) ) {
+            tempFileToucherTask = new TempFileToucherTask( httpBindServer );
+            final Duration period = Duration.ofMillis(JiveGlobals.getLongProperty( "jetty.temp-file-toucher.period", Duration.ofDays(1).toMillis() ));
+            TaskEngine.getInstance().schedule( tempFileToucherTask, period, period );
+        }
+*/		
+    }
+
+    public void stop() {
+        CertificateManager.removeListener(this);
+/*
+        if ( tempFileToucherTask != null ) {
+            TaskEngine.getInstance().cancelScheduledTask( tempFileToucherTask );
+            tempFileToucherTask = null;
+        }
+*/
+        if (httpBindServer != null) {
+            try {
+				
+                if ( extensionHandlers.getHandlers() != null ) {
+                    Arrays.stream(handlerList.getHandlers().toArray()).forEach(handler  -> {
+                        try {
+                            ((Handler)handler).stop();
+                        } catch (Exception e) {
+                            Log.warn("An exception occurred while trying to stop extension handler: {}", handler, e);
+                        }
+                    });
+                }
+                extensionHandlers.stop();
+
+                if ( handlerList.getHandlers() != null ) {
+                    Arrays.stream(handlerList.getHandlers().toArray()).forEach(handler-> {
+                        try {
+                            ((Handler)handler).stop();
+                        } catch (Exception e) {
+                            Log.warn("An exception occurred while trying to stop handler: {}", handler, e);
+                        }
+                    });
+                }
+                handlerList.stop();
+
+                httpBindServer.stop();
+                Log.info("HTTP3 bind service stopped");
+            }
+            catch (Exception e) {
+                Log.error("Error stopping HTTP3 bind service", e);
+            }
+            httpBindServer = null;
+        }
+    }
+
+    public HttpSessionManager getSessionManager() {
+        return httpSessionManager;
+    }
+	
+    private Connector createConnector( final Server httpBindServer ) {		
+        final int port = HTTP_BIND_PORT.getValue();
+		
+        if (port > 0) {
+            HttpConfiguration httpConfig = new HttpConfiguration();
+            httpConfig.setSendServerVersion( false );
+            configureProxiedConnector(httpConfig);
+            ServerConnector connector = new ServerConnector(httpBindServer, new HttpConnectionFactory(httpConfig));
+
+            // Listen on a specific network interface if it has been set.
+            connector.setHost(getBindInterface());
+            connector.setPort(4040);
+            return connector;
+        }
+        else
+        {
+            return null;
+        }
+    }	
+	
+    private Connector createSSLConnector( final Server httpBindServer ) {
+        final int securePort = HTTP_BIND_SECURE_PORT.getValue();
+        try {
+            final IdentityStore identityStore = XMPPServer.getInstance().getCertificateStoreManager().getIdentityStore( ConnectionType.BOSH_C2S );
+
+            if (securePort > 0 && identityStore.getStore().aliases().hasMoreElements() ) {
+                if ( !identityStore.containsDomainCertificate( ) ) {
+                    Log.warn("HTTP binding: Using certificates but they are not valid for the hosted domain");
+                }
+
+                final ConnectionManager connectionManager = XMPPServer.getInstance().getConnectionManager();
+                final ConnectionConfiguration configuration = connectionManager.getListener( ConnectionType.BOSH_C2S, true ).generateConnectionConfiguration();
+                final SslContextFactory.Server sslContextFactory = new EncryptionArtifactFactory(configuration).getSslContextFactory();
+
+                final HttpConfiguration httpsConfig = new HttpConfiguration();
+                // httpsConfig.setSecureScheme("https");
+                //httpsConfig.setSecurePort(4443);
+                SecureRequestCustomizer secureRequestCustomizer = new SecureRequestCustomizer();
+                //secureRequestCustomizer.setSniHostCheck(sslContextFactory.isSniRequired());
+                httpsConfig.addCustomizer( secureRequestCustomizer );
+                //configureProxiedConnector(httpsConfig);
+                //httpsConfig.setSendServerVersion( false );	
+
+				HttpConnectionFactory http11 = new HttpConnectionFactory(httpsConfig);			
+				HTTP2ServerConnectionFactory h2 = new HTTP2ServerConnectionFactory(httpsConfig);
+
+				ALPNServerConnectionFactory alpn = new ALPNServerConnectionFactory();
+				alpn.setDefaultProtocol(http11.getProtocol());
+				SslConnectionFactory ssl = new SslConnectionFactory(sslContextFactory, alpn.getProtocol());				
+				final ServerConnector sslConnector = new ServerConnector(httpBindServer, ssl, alpn, h2, http11);				
+                sslConnector.setHost(getBindInterface());
+                sslConnector.setPort(4443);
+                return sslConnector;
+            }
+        }
+        catch (Exception e) {
+            Log.error("Error creating SSL connector for Http bind", e);
+        }
+
+        return null;
+    }	
+
+    private Connector createHTTP3Connector( final Server httpBindServer ) {
+        final int securePort = HTTP_BIND_SECURE_PORT.getValue();
+        try {
+            final IdentityStore identityStore = XMPPServer.getInstance().getCertificateStoreManager().getIdentityStore( ConnectionType.BOSH_C2S );
+
+            if (securePort > 0 && identityStore.getStore().aliases().hasMoreElements() ) {
+                if ( !identityStore.containsDomainCertificate( ) ) {
+                    Log.warn("HTTP binding: Using certificates but they are not valid for the hosted domain");
+                }
+
+                final ConnectionManager connectionManager = XMPPServer.getInstance().getConnectionManager();
+                final ConnectionConfiguration configuration = connectionManager.getListener( ConnectionType.BOSH_C2S, true ).generateConnectionConfiguration();
+                final SslContextFactory.Server sslContextFactory = new EncryptionArtifactFactory(configuration).getSslContextFactory();			
+
+				ServerQuicConfiguration quicConfiguration = new ServerQuicConfiguration(sslContextFactory, Path.of(JiveGlobals.getHomePath() + File.separator + "resources" + File.separator + "security" ));
+				quicConfiguration.setMaxBidirectionalRemoteStreams(1024);				
+											
+				QuicServerConnector  connector = new QuicServerConnector(httpBindServer, quicConfiguration, new HTTP3ServerConnectionFactory(quicConfiguration));
+				connector.setHost(getBindInterface());
+				connector.setPort(443);				
+				
+                return connector;
+            }
+        }
+        catch (Exception e) {
+            Log.error("Error creating HTTP3 connector for Http bind", e);
+        }
+
+        return null;
+    }
+
+    private void configureProxiedConnector(HttpConfiguration httpConfig) {
+        // Check to see if we are deployed behind a proxy
+        // Refer to http://eclipse.org/jetty/documentation/current/configuring-connectors.html
+        if (HTTP_BIND_FORWARDED.getValue()) {
+            ForwardedRequestCustomizer customizer = new ForwardedRequestCustomizer();
+            // default: "X-Forwarded-For"
+            String forwardedForHeader = HTTP_BIND_FORWARDED_FOR.getValue();
+            if (forwardedForHeader != null) {
+                customizer.setForwardedForHeader(forwardedForHeader);
+            }
+            // default: "X-Forwarded-Server"
+            String forwardedServerHeader = HTTP_BIND_FORWARDED_SERVER.getValue();
+            if (forwardedServerHeader != null) {
+                customizer.setForwardedServerHeader(forwardedServerHeader);
+            }
+            // default: "X-Forwarded-Host"
+            String forwardedHostHeader = HTTP_BIND_FORWARDED_HOST.getValue();
+            if (forwardedHostHeader != null) {
+                customizer.setForwardedHostHeader(forwardedHostHeader);
+            }
+            // default: none
+            String hostName = HTTP_BIND_FORWARDED_HOST_NAME.getValue();
+            if (hostName != null) {
+                customizer.setHostHeader(hostName);
+            }
+
+            httpConfig.addCustomizer(customizer);
+        }
+        httpConfig.setRequestHeaderSize(HTTP_BIND_REQUEST_HEADER_SIZE.getValue());
+   }
+
+    private String getBindInterface() {
+        String interfaceName = JiveGlobals.getXMLProperty("network.interface");
+        String bindInterface = null;
+        if (interfaceName != null) {
+            if (!interfaceName.trim().isEmpty()) {
+                bindInterface = interfaceName;
+            }
+        }
+        return bindInterface;
+    }
+
+    /**
+     * Returns true if the HTTP binding server is currently enabled.
+     *
+     * @return true if the HTTP binding server is currently enabled.
+     */
+    public boolean isHttpBindEnabled() {
+        return httpBindServer != null && httpBindServer.isRunning();
+    }
+
+    /**
+     * Returns true if a listener on the HTTP binding port is running.
+     *
+     * @return true if a listener on the HTTP binding port is running.
+     */
+    public boolean isHttpBindActive()
+    {
+        if ( isHttpBindEnabled() )
+        {
+            final int configuredPort = HTTP_BIND_PORT.getValue();
+            for ( final Connector connector : httpBindServer.getConnectors() )
+            {
+                if ( !( connector instanceof ServerConnector ) )
+                {
+                    continue;
+                }
+                final int activePort = ( (ServerConnector) connector ).getLocalPort();
+
+                if ( activePort == configuredPort )
+                {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Returns true if a listener on the HTTPS binding port is running.
+     *
+     * @return true if a listener on the HTTPS binding port is running.
+     */
+    public boolean isHttpsBindActive()
+    {
+        if ( isHttpBindEnabled() )
+        {
+            final int configuredPort = HTTP_BIND_SECURE_PORT.getValue();
+            for ( final Connector connector : httpBindServer.getConnectors() )
+            {
+                if ( !( connector instanceof ServerConnector ) )
+                {
+                    continue;
+                }
+                final int activePort = ( (ServerConnector) connector ).getLocalPort();
+
+                if ( activePort == configuredPort )
+                {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    public String getWebsocketUnsecureAddress() {
+        return "ws://" + XMPPServer.getInstance().getServerInfo().getHostname() + ":" + HTTP_BIND_PORT.getValue() + "/ws/";
+    }
+
+    public String getWebsocketSecureAddress() {
+        return "wss://" + XMPPServer.getInstance().getServerInfo().getHostname() + ":" + HTTP_BIND_SECURE_PORT.getValue() + "/ws/";
+    }
+
+    public String getHttpBindUnsecureAddress() {
+        return "http://" + XMPPServer.getInstance().getServerInfo().getHostname() + ":" + HTTP_BIND_PORT.getValue() + "/http-bind/";
+    }
+
+    public String getHttpBindSecureAddress() {
+        return "https://" + XMPPServer.getInstance().getServerInfo().getHostname() + ":" + HTTP_BIND_SECURE_PORT.getValue() + "/http-bind/";
+    }
+
+    public String getJavaScriptUrl() {
+        return "http://" + XMPPServer.getInstance().getServerInfo().getHostname() + ":" + HTTP_BIND_PORT.getValue() + "/scripts/";
+    }
+
+    public boolean isAllOriginsAllowed() {
+        return HTTP_BIND_ALLOWED_ORIGINS.getValue().contains(HTTP_BIND_CORS_ALLOW_ORIGIN_ALL);
+    }
+
+    public boolean isThisOriginAllowed(String origin) {
+        return isAllOriginsAllowed() || HTTP_BIND_ALLOWED_ORIGINS.getValue().stream().anyMatch(o -> o.equalsIgnoreCase(origin));
+    }
+
+    /**
+     * Creates a Jetty context handler that can be used to expose QUIC (HTTP-Bind) functionality.
+     *
+     * Note that an invocation of this method will not register the handler (and thus make the related functionality
+     * available to the end user). Instead, the created handler is returned by this method, and will need to be
+     * registered with the embedded Jetty webserver by the caller.
+     *
+     * @return A Jetty context handler (never null).
+     */
+    protected ServletContextHandler createBoshHandler()
+    {
+        final int options = ServletContextHandler.SESSIONS;
+        final ServletContextHandler context = new ServletContextHandler( null, "/http-bind", options );
+
+        context.setAttribute( InstanceManager.class.getName(), new SimpleInstanceManager() );
+
+        // Generic configuration of the context.
+        context.setAllowNullPathInfo( true );
+
+        // Add the functionality-providers.
+        context.addServlet( new ServletHolder( new HttpBindServlet() ), "/*" );
+
+        // Add compression filter when needed.
+        if (isHttpCompressionEnabled()) {
+            final GzipHandler gzipHandler = new GzipHandler();
+            gzipHandler.addIncludedPaths("/*");
+            gzipHandler.addIncludedMethods(HttpMethod.POST.asString());
+            context.insertHandler(gzipHandler);
+        }
+
+        // Add CSP headers for all HTTP responses (errors, etc.)
+        context.addFilter(HttpBindContentSecurityPolicyFilter.class, "/*", null);
+
+        return context;
+    }
+
+    /**
+     * Creates a Jetty context handler that can be used to expose Websocket functionality.
+     *
+     * Note that an invocation of this method will not register the handler (and thus make the related functionality
+     * available to the end user). Instead, the created handler is returned by this method, and will need to be
+     * registered with the embedded Jetty webserver by the caller.
+     *
+     * @return A Jetty context handler (never null).
+     */
+    protected ServletContextHandler createWebsocketHandler()
+    {
+        final ServletContextHandler context = new ServletContextHandler( null, "/ws", ServletContextHandler.SESSIONS );
+        context.setAllowNullPathInfo(true);
+        // Add the functionality-providers.
+        context.addServlet( new ServletHolder( new OpenfireWebSocketServlet() ), "/*" );
+        JettyWebSocketServletContainerInitializer.configure(context, null);
+
+        // Add CSP headers for all HTTP responses (errors, etc.)
+        context.addFilter(HttpBindContentSecurityPolicyFilter.class, "/*", null);
+
+        return context;
+    }
+
+    // NOTE: enabled by default
+    private boolean isHttpCompressionEnabled() {
+        final ConnectionManager connectionManager = XMPPServer.getInstance().getConnectionManager();
+        final ConnectionConfiguration configuration = connectionManager.getListener( ConnectionType.BOSH_C2S, true ).generateConnectionConfiguration();
+        return configuration.getCompressionPolicy() == null || configuration.getCompressionPolicy().equals( Connection.CompressionPolicy.optional );
+    }
+
+    /**
+     * Creates a Jetty context handler that can be used to expose static files.
+     *
+     * Note that an invocation of this method will not register the handler (and thus make the related functionality
+     * available to the end user). Instead, the created handler is returned by this method, and will need to be
+     * registered with the embedded Jetty webserver by the caller.
+     *
+     * @return A Jetty context handler, or null when the static content could not be accessed.
+     */
+    protected ServletContextHandler createStaticContentHandler()
+    {
+        final File quicDirectory = new File( pluginDirectory.getPath() + "/classes/quic");
+        if ( quicDirectory.exists() )
+        {
+            if ( quicDirectory.canRead() )
+            {
+                final WebAppContext context = new WebAppContext( null, quicDirectory.getPath(), "/" );
+                context.setInitParameter("org.eclipse.jetty.servlet.Default.dirAllowed", "false");
+                context.setWelcomeFiles( new String[] { "index.html" } );
+               // context.addFilter(Http3BindContentSecurityPolicyFilter.class, "/*", EnumSet.allOf(DispatcherType.class));
+
+                return context;
+            }
+            else
+            {
+                Log.warn( "Openfire cannot read the directory: " + quicDirectory );
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Adds a Jetty handler to be added to the embedded web server that is used to expose Openfire's public
+     * web-bindings (eg: QUIC / HTTP-bind and websocket).
+     *
+     * @param handler The handler (cannot be null).
+     */
+    public void addJettyHandler(@Nonnull final ContextHandler handler)
+    {
+        if ( handler == null )
+        {
+            throw new IllegalArgumentException( "Argument 'handler' cannot be null." );
+        }
+
+        addJettyHandler(handler.get());
+    }
+
+    /**
+     * Removes a Jetty handler to be added to the embedded web server that is used to expose Openfire's public
+     * web-bindings (eg: QUIC / HTTP-bind and websocket).
+     *
+     * @param handler The handler (should not be null).
+     */
+    public void removeJettyHandler(@Nonnull final ContextHandler handler)
+    {
+        removeJettyHandler(handler.get());
+    }
+
+    /**
+     * Adds a Jetty handler to be added to the embedded web server that is used to expose QUIC (HTTP-bind)
+     * functionality.
+     *
+     * @param handler The handler (cannot be null).
+     */
+    public void addJettyHandler(@Nonnull final Handler handler )
+    {
+        if ( handler == null )
+        {
+            throw new IllegalArgumentException( "Argument 'handler' cannot be null." );
+        }
+
+        extensionHandlers.addHandler( handler );
+
+        if ( !handler.isStarted() && extensionHandlers.isStarted() )
+        {
+            try
+            {
+                handler.start();
+            }
+            catch ( Exception e )
+            {
+                Log.warn( "Unable to start handler {}", handler, e );
+            }
+        }
+    }
+
+    /**
+     * Removes a Jetty handler to be added to the embedded web server that is used to expose QUIC (HTTP-bind)
+     * functionality.
+     *
+     * Removing a handler, even when null, or non-existing, might have side-effects as introduced by the Jetty
+     * implementation. At the time of writing, Jetty will re
+     *
+     * @param handler The handler (should not be null).
+     */
+    public void removeJettyHandler(@Nonnull final Handler handler )
+    {
+        extensionHandlers.removeHandler( handler );
+        if ( handler.isStarted() )
+        {
+            try
+            {
+                handler.stop();
+            }
+            catch ( Exception e )
+            {
+                Log.warn( "Unable to stop the handler that was removed: {}", handler, e );
+            }
+        }
+
+    }
+
+    private void doEnableHttpBind(boolean shouldEnable) {
+        if (shouldEnable && httpBindServer == null) {
+            start();
+        }
+        else if (!shouldEnable && httpBindServer != null) {
+            stop();
+        }
+    }
+
+    /**
+     * Returns true if script syntax is enabled. Script syntax allows QUIC to be used in
+     * environments where clients may be restricted to using a particular server. Instead of using
+     * standard HTTP Post requests to transmit data,  HTTP Get requests are used.
+     *
+     * @return true if script syntax is enabled.
+     * @see <a href="http://www.xmpp.org/extensions/xep-0124.html#script">BOSH: Alternative Script
+     * Syntax</a>
+     */
+    public boolean isScriptSyntaxEnabled() {
+        return JiveGlobals.getBooleanProperty("xmpp.http3bind.scriptSyntax.enabled", false);
+    }
+
+    /**
+     * Enables or disables script syntax.
+     *
+     * @param isEnabled true to enable script syntax and false to disable it.
+     * @see #isScriptSyntaxEnabled()
+     * @see <a href="http://www.xmpp.org/extensions/xep-0124.html#script">BOSH: Alternative Script
+     * Syntax</a>
+     */
+    public void setScriptSyntaxEnabled(boolean isEnabled) {
+        final String property = "xmpp.http3bind.scriptSyntax.enabled";
+        if(!isEnabled) {
+            JiveGlobals.deleteProperty(property);
+        }
+        else {
+            JiveGlobals.setProperty(property, String.valueOf(isEnabled));
+        }
+    }
+
+    /**
+     * Static reference for {@link #restartServer()} that can be used as a listener of a {@link SystemProperty}.
+     * The provided argument is ignored.
+     */
+    public static void restart(Object ignored) {
+        if (getInstance() != null) {
+            getInstance().restartServer();
+        }
+    }
+
+    private synchronized void restartServer() {
+        stop();
+        start();
+    }
+
+    @Override
+    public void storeContentChanged( CertificateStore store )
+    {
+        restartServer();
+    }
+}
