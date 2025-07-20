@@ -76,6 +76,7 @@ public class BroadcastBox implements Plugin, PropertyEventListener, ProcessListe
     private Cache muc_properties;	
     private WhipIQHandler whipIQHandler;	
     private WhepIQHandler whepIQHandler;
+	private OlMeetIQHandler olMeetIQHandler;
 	private AppleMidiServer midiServer;
 	private JmDNS jmdns;
 	
@@ -91,10 +92,23 @@ public class BroadcastBox implements Plugin, PropertyEventListener, ProcessListe
             Log.debug("orinayo terminated - started");			
             if (executor != null)  executor.shutdown();
             if (orinayoThread != null) orinayoThread.destory();
-            if (jspService != null) HttpBindManager.getInstance().removeJettyHandler(jspService);				
-			if (whipIQHandler != null) whipIQHandler.stopHandler();			
-			if (whepIQHandler != null) whepIQHandler.stopHandler();		
+            if (jspService != null) HttpBindManager.getInstance().removeJettyHandler(jspService);	
+			
+			if (whipIQHandler != null) {
+				whipIQHandler.stopHandler();
+				XMPPServer.getInstance().getIQRouter().removeHandler(whipIQHandler);				
+			}
+			
+			if (whepIQHandler != null) {
+				whepIQHandler.stopHandler();	
+				XMPPServer.getInstance().getIQRouter().removeHandler(whepIQHandler);				
+			}
 
+			if (olMeetIQHandler != null) {
+				XMPPServer.getInstance().getIQRouter().removeHandler(olMeetIQHandler);
+				olMeetIQHandler = null;	
+			}				
+			
 			if (jmdns != null) jmdns.unregisterAllServices();
 			if (midiServer != null) midiServer.stop();
 
@@ -124,7 +138,12 @@ public class BroadcastBox implements Plugin, PropertyEventListener, ProcessListe
 		XMPPServer.getInstance().getIQRouter().addHandler(whepIQHandler);	
 		XMPPServer.getInstance().getIQDiscoInfoHandler().addServerFeature("urn:xmpp:whep:0");				
 		XMPPServer.getInstance().getIQDiscoInfoHandler().addServerFeature("urn:xmpp:whep:ice:0");
-		XMPPServer.getInstance().getIQDiscoInfoHandler().addServerFeature("urn:xmpp:whep:ext:0");		
+		XMPPServer.getInstance().getIQDiscoInfoHandler().addServerFeature("urn:xmpp:whep:ext:0");
+
+		olMeetIQHandler = new OlMeetIQHandler();
+		XMPPServer.getInstance().getIQRouter().addHandler(olMeetIQHandler);
+		XMPPServer.getInstance().getIQDiscoInfoHandler().addServerFeature("urn:xmpp:http:online-meetings:initiate:0");				
+		XMPPServer.getInstance().getIQDiscoInfoHandler().addServerFeature("urn:xmpp:http:online-meetings#ohun");		
 		
         checkNatives(pluginDirectory);
         executor = Executors.newCachedThreadPool();
@@ -183,6 +202,36 @@ public class BroadcastBox implements Plugin, PropertyEventListener, ProcessListe
 	public static String getPublicIpAddress() {
 		return "";
 	}
+	
+    public URL getWebappURL()
+    {
+        final String override = JiveGlobals.getProperty( "orinayo.webapp.url.override" );
+        if ( override != null && !override.trim().isEmpty() )
+        {
+            try
+            {
+                return new URL( override );
+            }
+            catch ( MalformedURLException e )
+            {
+                Log.warn( "An override for the webapp address is defined in 'orinayo.webapp.url.override', but its value is not a valid URL.", e );
+            }
+        }
+        try
+        {
+            final String protocol = "https"; // No point in providing the non-SSL protocol, as webRTC won't work there.
+            final String host = XMPPServer.getInstance().getServerInfo().getHostname();
+            final int port = Integer.parseInt(JiveGlobals.getProperty("httpbind.port.secure", "7443"));
+            final String path = "/orinayo/ohun";
+
+            return new URL( protocol, host, port, path );
+        }
+        catch ( MalformedURLException e )
+        {
+            Log.error( "Unable to compose the webapp URL", e );
+            return null;
+        }
+    }	
 	
     public void onOutputLine(final String line)     {
         Log.debug("onOutputLine " + line);
