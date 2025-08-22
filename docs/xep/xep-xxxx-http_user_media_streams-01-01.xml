@@ -6,7 +6,7 @@
 <?xml-stylesheet type='text/xsl' href='xep.xsl'?>
 <xep xmlns="">
 <header>
-  <title>Media Streams</title>
+  <title>HTTP User Media Streams</title>
   <abstract>This specification defines a payload format for the ingestion and egress of media streams for music and other media collaborations using WebRTC-based ingestion/egress. </abstract>
   <legal>
     <copyright>This XMPP Extension Protocol is copyright © 1999 – 2023 by the <link url="https://xmpp.org/">XMPP Standards Foundation</link> (XSF).</copyright>
@@ -23,7 +23,7 @@
   <dependencies/>
   <supersedes/>
   <supersededby/>
-  <shortname>user_media_streams</shortname>
+  <shortname>http_user_media_streams</shortname>
   <author>
     <firstname>Dele</firstname>
     <surname>Olajide</surname>
@@ -48,11 +48,12 @@
   <p>This specification does not prescribe a method for the security, discovery, publishing and subscription of published media stream keys. It is assumed that this will be achieved with other XMPP mechanisms like &xep0060; or &xep0482; for example.</p>
 </section1>
 <section1 topic="Requirements" anchor="reqs">
-  <ul>
+  <ul>	  
     <li>Be as easy to implement as possible. This is grounded on the idea that most XMPP implementation programming languages already have HTTP libraries available.</li>
     <li>Usable with WebRTC-based broadcasting providers that have no XMPP integration.</li>
     <li>Usable with XMPP client applications that may have no HTTP/S access to the WebRTC-based ingestion/egress service.</li>	
     <li>Anyone who knows the WHIP and WHEP REST Endpoints SHOULD be able to access them as well.</li>
+    <li>WHIP and WHEP media streams should map directly to XMPP Jingle sessions with a single uni-directional media stream.</li>	
   </ul>
 </section1>
 <section1 topic="Discovering Support" anchor="disco">
@@ -82,7 +83,7 @@
 </iq>]]></example>
   </section2>
 </section1>
-<section1 topic="User Media Streams Workflow" anchor="workflow">
+<section1 topic="HTTP User Media Streams Workflow" anchor="workflow">
   <section2 topic='User requests server to ingest a media stream' anchor='ingest-media-stream'>   
     <p>A sample protocol flow to ingest a media session from the client. The client MUST provide a WHIP SDP offer and a stream key for the ingest</p> 
     <example caption='Client sends a WHIP SDP offer of a media stream to server'><![CDATA[  
