@@ -267,6 +267,11 @@ public class BroadcastBox implements Plugin, PropertyEventListener, ProcessListe
 		proxyWhip.setInitParameter("prefix", "/");
 		jspService.addServlet(proxyWhip, "/api/whip/*");
 
+		ServletHolder proxySSE = new ServletHolder(ProxyServlet.Transparent.class);
+		proxySSE.setInitParameter("proxyTo", webUrl);
+		proxySSE.setInitParameter("prefix", "/");
+		jspService.addServlet(proxySSE, "/api/sse/*");
+		
 		ServletHolder proxyWhep = new ServletHolder(ProxyServlet.Transparent.class);
 		proxyWhep.setInitParameter("proxyTo", webUrl);
 		proxyWhep.setInitParameter("prefix", "/");
