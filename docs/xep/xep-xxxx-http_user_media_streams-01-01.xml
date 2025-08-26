@@ -90,7 +90,7 @@
     <p>A sample protocol flow to ingest a media session from the client. The client MUST provide a WHIP SDP offer and a stream key for the ingest. If the client has discovered that the server can transcribe voice into text, it can make a request using the transcribe attribute. </p> 
     <example caption='Client sends a WHIP SDP offer of a media stream to server and requests for voice audio to text transcription'><![CDATA[  
 <iq from='juliet@capulet.lit/producer' id='ih28sx61' type='set'>
-  <whip xmlns='urn:xmpp:whip:0' key='juliet-ih28sx61' record='true' transcribe='true'>
+  <whip xmlns='urn:xmpp:whip:0' key='juliet-ih28sx61' transcribe='true'>
     <sdp>
 	  ...... SDP OFFER
     </sdp>
