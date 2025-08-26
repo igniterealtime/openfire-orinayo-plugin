@@ -32,7 +32,7 @@
   </author>
   <revision>  
     <version>0.0.1</version>
-    <date>2025-06-30</date>
+    <date>2025-08-30</date>
     <initials>do</initials>
     <remark>
       <ul>
@@ -53,13 +53,14 @@
     <li>Usable with WebRTC-based broadcasting providers that have no XMPP integration.</li>
     <li>Usable with XMPP client applications that may have no HTTP/S access to the WebRTC-based ingestion/egress service.</li>	
     <li>Anyone who knows the WHIP and WHEP REST Endpoints SHOULD be able to access them as well.</li>
-    <li>WHIP and WHEP media streams should map directly to XMPP Jingle sessions with a single uni-directional media stream.</li>	
+    <li>WHIP and WHEP media streams should map directly to XMPP Jingle sessions with uni-directional media streams. &xep0482; with a stream key URI and a Jingle session identifier SHOULD be referencing the same media stream.</li>	
   </ul>
 </section1>
 <section1 topic="Discovering Support" anchor="disco">
   <section2 topic="Discovery Query" anchor="disco-initiation">
-    <p>The server advertises support for WebRTC-based ingestion/egress, as specified by this protocol, by including the "urn:xmpp:whip:0" namespace, as well as "urn:xmpp:whep:0" namespaces in its service discovery information features as specified in in &xep0030;.</p>
-    <p>If the server can push ice candidates patches from the WebRTC-based ingestion/egress, it SHOULD include 'urn:xmpp:whip:ice:0' and 'urn:xmpp:whep:ice:0' namespaces. If the WebRTC-based egress supports extensions, then it SHOULD also include the 'urn:xmpp:whep:ext:0' namespace. </p>
+    <p>The entity advertises support for WebRTC-based ingestion/egress, as specified by this protocol, by including the "urn:xmpp:whip:0" namespace, as well as "urn:xmpp:whep:0" namespaces in its service discovery information features as specified in in &xep0030;.</p>
+    <p>If the entity can push ice candidates patches from the WebRTC-based ingestion/egress, it SHOULD include 'urn:xmpp:whip:ice:0' and 'urn:xmpp:whep:ice:0' namespaces. If the WebRTC-based egress supports extensions, then it SHOULD also include the 'urn:xmpp:whep:ext:0' namespace. </p>
+	<p>If the entity can transcribe voice into text from an ingested media stream, it SHOULD include the 'urn:xmpp:whip:transcribe:0' namespace.</p>
     <example caption="Client sends service discovery request to server"><![CDATA[
 <iq to='shakespeare.lit'
     from='juliet@capulet.lit/producer'
@@ -67,7 +68,7 @@
     type='get'>
   <query xmlns='http://jabber.org/protocol/disco#info'/>
 </iq>]]></example>
-    <example caption="Server replies to service discovery request and reports capability for WebRTC-based ingestion, egress, extensions and ice candidate trickles"><![CDATA[
+    <example caption="Server replies to service discovery request and reports capability for WebRTC-based ingestion, egress, extensions, ice candidate trickles and voice to text transcription."><![CDATA[
 <iq from='shakespeare.lit'
     to='juliet@capulet.lit/producer'
     id='disco_01'
@@ -75,20 +76,21 @@
   <query xmlns='http://jabber.org/protocol/disco#info'>
     <identity category='server' type='im' name='Openfire Server'/>
     <feature var='urn:xmpp:whip:0'/>
-    <feature var='urn:xmpp:whip:ice:0'/>  	
+    <feature var='urn:xmpp:whip:ice:0'/> 	
+    <feature var='urn:xmpp:whip:transcribe:0'/>	 	
     <feature var='urn:xmpp:whep:0'/>  
     <feature var='urn:xmpp:whep:ice:0'/>  
-    <feature var='urn:xmpp:whep:ext:0'/>    
+    <feature var='urn:xmpp:whep:ext:0'/>  
   </query>
 </iq>]]></example>
   </section2>
 </section1>
 <section1 topic="HTTP User Media Streams Workflow" anchor="workflow">
   <section2 topic='User requests server to ingest a media stream' anchor='ingest-media-stream'>   
-    <p>A sample protocol flow to ingest a media session from the client. The client MUST provide a WHIP SDP offer and a stream key for the ingest</p> 
-    <example caption='Client sends a WHIP SDP offer of a media stream to server'><![CDATA[  
+    <p>A sample protocol flow to ingest a media session from the client. The client MUST provide a WHIP SDP offer and a stream key for the ingest. If the client has discovered that the server can transcribe voice into text, it can make a request using the transcribe attribute. </p> 
+    <example caption='Client sends a WHIP SDP offer of a media stream to server and requests for voice audio to text transcription'><![CDATA[  
 <iq from='juliet@capulet.lit/producer' id='ih28sx61' type='set'>
-  <whip xmlns='urn:xmpp:whip:0' key='juliet-ih28sx61'>
+  <whip xmlns='urn:xmpp:whip:0' key='juliet-ih28sx61' record='true' transcribe='true'>
     <sdp>
 	  ...... SDP OFFER
     </sdp>
@@ -100,7 +102,7 @@
     <p>Depending on how the WHIP service is configured, the server MAY include a complete SDP answer including ICE candidates or a partial SDP without ICE candidates and later push a patched WHIP SDP with ICE candidates as they trickle in. </p> 	
     <example caption='The server responds with a complete or partial WHIP SDP answer for the client'><![CDATA[  
 <iq to='juliet@capulet.lit/producer' id='ih28sx61' from='shakespeare.lit' type='result'>
-  <whip xmlns='urn:xmpp:whip:0' key='juliet-ih28sx61'>
+  <whip xmlns='urn:xmpp:whip:0' key='juliet-ih28sx61' url="https://capulet.lit/media/juliet-ih28sx61.mp4">
     <sdp>  
       ...... SDP ANSWER
     </sdp>	
@@ -124,6 +126,14 @@
 		<text xmlns='urn:ietf:params:xml:ns:xmpp-stanzas'>Streaming is in use</text>
 	  </error>	
   </whip>   
+</iq>	
+    ]]></example> 
+    <example caption='The server streams transcribed text to the client from voice audio in the ingested media stream'><![CDATA[  
+<message to='juliet@shakespeare.lit/producer' id='msg1' from='shakespeare.lit' type='chat'>
+  <transcribe xmlns='urn:xmpp:whip:transcribe:0' key='juliet-ih28sx61' />
+  <body>
+	....... Text
+  </body>
 </iq>	
     ]]></example> 	
   </section2>
@@ -207,6 +217,7 @@
     <ul>
       <li>urn:xmpp:whip:0</li>
       <li>urn:xmpp:whip:ice:0</li> 	  
+      <li>urn:xmpp:whip:transcribe:0</li> 	  	  
       <li>urn:xmpp:whep:0</li>
       <li>urn:xmpp:whep:ice:0</li>  	  
       <li>urn:xmpp:whep:ext:0</li>    
