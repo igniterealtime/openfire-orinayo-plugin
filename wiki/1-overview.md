@@ -11,7 +11,7 @@
 
 This document provides a comprehensive overview of the Orin Ayo Openfire plugin, a collaborative music platform that enables real-time musical collaboration through XMPP and WebRTC technologies. The plugin transforms Openfire into a live music server that supports MIDI instrument publishing/subscribing and WebRTC media streaming.
 
-For detailed information about specific subsystems, see [Core Plugin Architecture](/igniterealtime/openfire-orinayo-plugin/2-core-plugin-architecture) for the main plugin implementation, [XMPP Protocol Extensions](/igniterealtime/openfire-orinayo-plugin/3-xmpp-protocol-extensions) for custom XMPP handlers, [Web Interfaces and Client Applications](/igniterealtime/openfire-orinayo-plugin/4-web-interfaces-and-client-applications) for user-facing components, and [Media Processing Systems](/igniterealtime/openfire-orinayo-plugin/5-media-processing-systems) for MIDI and audio/video handling.
+For detailed information about specific subsystems, see [Core Plugin Architecture](./2-core-plugin-architecture.md) for the main plugin implementation, [XMPP Protocol Extensions](./3-xmpp-protocol-extensions.md) for custom XMPP handlers, [Web Interfaces and Client Applications](./4-web-interfaces-and-client-applications.md) for user-facing components, and [Media Processing Systems](./5-media-processing-systems.md) for MIDI and audio/video handling.
 
 ## Purpose and Functionality
 

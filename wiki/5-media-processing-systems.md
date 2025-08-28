@@ -15,7 +15,7 @@
 
 This document covers the media processing capabilities of the Orin Ayo plugin, including ChordPro to MIDI conversion, MIDI file generation, and WebRTC-based audio/video streaming. The system transforms musical notation into MIDI format for arranger keyboards and provides real-time streaming capabilities for collaborative music sessions.
 
-For detailed implementation of ChordPro conversion algorithms, see [MIDI and ChordPro Processing](/igniterealtime/openfire-orinayo-plugin/5.1-midi-and-chordpro-processing). For WebRTC protocol specifics and streaming examples, see [WebRTC Media Streaming](/igniterealtime/openfire-orinayo-plugin/5.2-webrtc-media-streaming). For client-side streaming applications, see [Client-Side Applications](/igniterealtime/openfire-orinayo-plugin/4.3-client-side-applications).
+For detailed implementation of ChordPro conversion algorithms, see [MIDI and ChordPro Processing](./5.1-midi-and-chordpro-processing.md). For WebRTC protocol specifics and streaming examples, see [WebRTC Media Streaming](./5.2-webrtc-media-streaming.md). For client-side streaming applications, see [Client-Side Applications](./4.3-client-side-applications.md).
 
 ## System Architecture Overview
 

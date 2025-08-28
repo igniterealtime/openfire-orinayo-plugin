@@ -8,7 +8,7 @@
 
 This document covers the web-based user interfaces and client applications provided by the Orin Ayo plugin. This includes JSP-based admin console integration pages and the modern web client applications that end users interact with for audio/video conferencing and collaborative music features.
 
-For information about the underlying XMPP protocol extensions that power these web interfaces, see [XMPP Protocol Extensions](/igniterealtime/openfire-orinayo-plugin/3-xmpp-protocol-extensions). For details about the core plugin architecture and server-side components, see [Core Plugin Architecture](/igniterealtime/openfire-orinayo-plugin/2-core-plugin-architecture).
+For information about the underlying XMPP protocol extensions that power these web interfaces, see [XMPP Protocol Extensions](./3-xmpp-protocol-extensions.md). For details about the core plugin architecture and server-side components, see [Core Plugin Architecture](./2-core-plugin-architecture.md).
 
 ## Overview
 

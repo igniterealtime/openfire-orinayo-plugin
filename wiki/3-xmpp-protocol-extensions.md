@@ -9,7 +9,7 @@
 
 This document describes the custom XMPP protocol extensions implemented by the Orin Ayo plugin to enable WebRTC media streaming through XMPP. These extensions provide XMPP-native access to WHIP (WebRTC-HTTP Ingestion Protocol) and WHEP (WebRTC-HTTP Egress Protocol) functionality, allowing clients to publish and consume media streams using standard XMPP IQ stanzas.
 
-For information about the core plugin architecture and external process management, see [Core Plugin Architecture](/igniterealtime/openfire-orinayo-plugin/2-core-plugin-architecture). For details on web client interfaces and HTTP API endpoints, see [Web Interfaces and Client Applications](/igniterealtime/openfire-orinayo-plugin/4-web-interfaces-and-client-applications).
+For information about the core plugin architecture and external process management, see [Core Plugin Architecture](./2-core-plugin-architecture.md). For details on web client interfaces and HTTP API endpoints, see [Web Interfaces and Client Applications](./4-web-interfaces-and-client-applications.md).
 
 ## Protocol Overview
 

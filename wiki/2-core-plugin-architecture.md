@@ -12,7 +12,7 @@
 > * [src/java/org/ifsoft/orinayo/openfire/OlMeetIQHandler.java](https://github.com/igniterealtime/openfire-orinayo-plugin/blob/932fc61c/src/java/org/ifsoft/orinayo/openfire/OlMeetIQHandler.java)
 > * [src/web/orinayo-summary.jsp](https://github.com/igniterealtime/openfire-orinayo-plugin/blob/932fc61c/src/web/orinayo-summary.jsp)
 
-This document describes the core architecture of the Orin Ayo Openfire plugin, focusing on the main plugin class, lifecycle management, and integration with the Openfire XMPP server. For information about XMPP protocol extensions and IQ handlers, see [XMPP Protocol Extensions](/igniterealtime/openfire-orinayo-plugin/3-xmpp-protocol-extensions). For details about web interfaces and client applications, see [Web Interfaces and Client Applications](/igniterealtime/openfire-orinayo-plugin/4-web-interfaces-and-client-applications).
+This document describes the core architecture of the Orin Ayo Openfire plugin, focusing on the main plugin class, lifecycle management, and integration with the Openfire XMPP server. For information about XMPP protocol extensions and IQ handlers, see [XMPP Protocol Extensions](./3-xmpp-protocol-extensions.md). For details about web interfaces and client applications, see [Web Interfaces and Client Applications](./4-web-interfaces-and-client-applications.md).
 
 ## Plugin Overview and Structure
 

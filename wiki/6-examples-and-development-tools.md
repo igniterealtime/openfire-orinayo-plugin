@@ -21,7 +21,7 @@
 
 This document covers the example implementations, development utilities, and testing tools provided with the Orin Ayo plugin. These resources demonstrate how to integrate with the plugin's WebRTC streaming capabilities using both XMPP and HTTP protocols. The examples serve as reference implementations for developers building client applications that interact with the plugin's media streaming services.
 
-For detailed information about the underlying WebRTC streaming architecture, see [WebRTC Media Streaming](/igniterealtime/openfire-orinayo-plugin/5.2-webrtc-media-streaming). For admin console and web interface details, see [Web Interfaces and Client Applications](/igniterealtime/openfire-orinayo-plugin/4-web-interfaces-and-client-applications).
+For detailed information about the underlying WebRTC streaming architecture, see [WebRTC Media Streaming](./5.2-webrtc-media-streaming.md). For admin console and web interface details, see [Web Interfaces and Client Applications](./4-web-interfaces-and-client-applications.md).
 
 ## Example Architecture Overview
 
