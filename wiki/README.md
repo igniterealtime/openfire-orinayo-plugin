@@ -1,6 +1,4 @@
-# MIDI-and-ChordPro-Processing-igniterealtime-openfire-orinayo-plugin---DeepWiki
-
-## Content Index
+# Content Index
 
 - [Overview](Overview.md)
 - [Core-Plugin-Architecture](Core-Plugin-Architecture.md)
